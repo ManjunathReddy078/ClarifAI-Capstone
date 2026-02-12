@@ -1,14 +1,9 @@
-# Python
 venv/
 __pycache__/
-*.pyc
-
-# Database
 *.db
-
-# VS Code
-.vscode/
-
-# OS
-.DS_Store
-Thumbs.db
+02_Diagrams/
+03_Presentations/
+04_Report/
+05_Research_Paper/
+06_Backups/
+07_Literature Survey/
