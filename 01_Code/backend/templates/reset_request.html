@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Reset Password | ClarifAI{% endblock %}
+{% block content %}
+<h2 style="margin-top:0;">Password Reset - Step 1</h2>
+<p style="color: var(--muted);">Enter your registered email.</p>
+<form method="post">
+    <label class="label">Email</label>
+    <input type="email" name="email" required>
+    <div class="flex" style="margin-top:14px;">
+        <button class="btn primary" type="submit">Continue</button>
+        <a class="btn" href="{{ url_for('auth.login') }}">Back</a>
+    </div>
+</form>
+{% endblock %}

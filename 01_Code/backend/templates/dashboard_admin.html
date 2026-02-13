@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard | ClarifAI{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="grid-2" style="margin-bottom:14px;">
+    <div class="card">
+        <h3 style="margin-top:0;">Moderation Queue</h3>
+        {% for item in pending_feedback %}
+            <div class="card" style="margin-bottom:10px;">
+                <div style="margin-bottom:8px;">
+                    <strong>For Faculty:</strong> {{ item.faculty.full_name }}
+                    <div style="color:var(--muted);">Student identity hidden at faculty view stage.</div>
+                </div>
+                <p style="margin-top:0;">{{ item.feedback_text }}</p>
+                <form method="post" action="{{ url_for('admin.moderate', feedback_id=item.id) }}">
+                    <label class="label">Admin Note (optional)</label>
+                    <textarea name="note"></textarea>
+                    <div class="flex" style="margin-top:10px;">
+                        <button class="btn success" name="action" value="approve" type="submit">Approve</button>
+                        <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
+                        <button class="btn warning" name="action" value="request_edit" type="submit">Request Edit</button>
+                    </div>
+                </form>
+            </div>
+        {% else %}
+            <p>No under-review feedback in queue.</p>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Manual Password Reset</h3>
+        <form method="post" action="{{ url_for('admin.manual_reset_password') }}">
+            <label class="label">User Email</label>
+            <input type="email" name="email" required>
+
+            <label class="label">New Password</label>
+            <input type="password" name="new_password" required>
+
+            <div style="margin-top:14px;">
+                <button class="btn primary" type="submit">Reset Password</button>
+            </div>
+        </form>
+
+        <h3>Recent Logs</h3>
+        {% for log in moderation_logs %}
+            <div style="border-bottom:1px solid var(--border); padding:8px 0;">
+                <strong>{{ log.action.replace('_', ' ')|title }}</strong>
+                <div style="color:var(--muted);">By {{ log.admin.full_name }} on {{ log.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
+                {% if log.note %}<div>{{ log.note }}</div>{% endif %}
+            </div>
+        {% else %}
+            <p>No moderation logs yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

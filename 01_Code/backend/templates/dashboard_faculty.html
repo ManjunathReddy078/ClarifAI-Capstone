@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Faculty Dashboard | ClarifAI{% endblock %}
+{% block page_title %}Faculty Dashboard{% endblock %}
+{% block content %}
+<div class="grid-2">
+    <div class="card">
+        <h3 style="margin-top:0;">Create Checklist</h3>
+        <form method="post" action="{{ url_for('faculty.create_checklist') }}">
+            <label class="label">Title</label>
+            <input type="text" name="title" required>
+
+            <label class="label">Description</label>
+            <textarea name="description"></textarea>
+
+            <label class="label">Student Email</label>
+            <input type="email" name="student_email" required>
+
+            <div style="margin-top:14px;">
+                <button class="btn primary" type="submit">Create</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Checklist Progress</h3>
+        {% for item in checklists %}
+            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+                <strong>{{ item.title }}</strong>
+                <div style="color:var(--muted);">{{ item.student.full_name }} ({{ item.student.email }})</div>
+                <span class="badge {{ 'approved' if item.is_completed else 'under_review' }}">
+                    {{ 'Completed' if item.is_completed else 'Pending' }}
+                </span>
+            </div>
+        {% else %}
+            <p>No checklist records yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card" style="margin-top:14px;">
+    <h3 style="margin-top:0;">Approved Feedback (Identity Hidden)</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Feedback</th>
+                <th>Sentiment</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in approved_feedback %}
+            <tr>
+                <td>{{ item.feedback_text }}</td>
+                <td>{{ item.sentiment|title }}</td>
+                <td><span class="badge approved">Approved</span></td>
+                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4">No approved feedback available.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

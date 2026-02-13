@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}ClarifAI | MCA Feedback Intelligence{% endblock %}
+{% block content %}
+<section class="home-hero card">
+    <h1 style="margin-top:0;">ClarifAI: MCA Feedback Intelligence Platform</h1>
+    <p style="color:var(--muted); margin-bottom:16px;">
+        A role-based academic system for secure feedback, sentiment-aware moderation, and quality improvements across the MCA department.
+    </p>
+    <div class="flex">
+        <a class="btn primary" href="{{ url_for('auth.login') }}">Login</a>
+        <a class="btn" href="{{ url_for('auth.register') }}">Sign Up</a>
+    </div>
+</section>
+
+<section class="grid-3" style="margin-top:14px;">
+    <div class="card">
+        <h3 style="margin-top:0;">Key Features</h3>
+        <ul>
+            <li>Role-based dashboards (Student/Faculty/Admin)</li>
+            <li>Sentiment-powered feedback moderation flow</li>
+            <li>Knowledge board and checklist tracking</li>
+            <li>Secure login and recovery with hashed credentials</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">Importance</h3>
+        <ul>
+            <li>Improves transparency in academic feedback</li>
+            <li>Promotes constructive and moderated communication</li>
+            <li>Supports faculty performance insights</li>
+            <li>Encourages continuous quality enhancement</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">Uniqueness</h3>
+        <ul>
+            <li>MCA-specific whitelist registration control</li>
+            <li>Anonymous identity view for faculty feedback</li>
+            <li>Hybrid auto-approval + admin moderation model</li>
+            <li>Integrated academic knowledge and action checklists</li>
+        </ul>
+    </div>
+</section>
+
+<section class="grid-2" style="margin-top:14px;">
+    <div class="card">
+        <h3 style="margin-top:0;">Contact Details</h3>
+        <p><strong>Department:</strong> MCA Department</p>
+        <p><strong>Project:</strong> ClarifAI Web + AI Feedback System</p>
+        <p><strong>Email:</strong> seelammanjunathreddy6@gmail.com</p>
+        <p><strong>Support:</strong> Contact department admin for account issues.</p>
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">Website Feedback / Improvement Suggestion</h3>
+        <form method="post" action="{{ url_for('home') }}">
+            <label class="label">Your Name</label>
+            <input type="text" name="visitor_name" required>
+
+            <label class="label">Your Email</label>
+            <input type="email" name="visitor_email" required>
+
+            <label class="label">Suggestion</label>
+            <textarea name="message" required></textarea>
+
+            <div style="margin-top:12px;">
+                <button class="btn primary" type="submit">Submit Suggestion</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

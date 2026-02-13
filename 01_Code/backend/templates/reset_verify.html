@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Verify Security Answer | ClarifAI{% endblock %}
+{% block content %}
+<h2 style="margin-top:0;">Password Reset - Step 2</h2>
+<p style="color: var(--muted);">Answer your registered security question.</p>
+<div class="card" style="padding:12px; margin-bottom:12px;">
+    <strong>{{ user.security_question }}</strong>
+</div>
+<form method="post">
+    <label class="label">Security Answer</label>
+    <input type="text" name="security_answer" required>
+    <div class="flex" style="margin-top:14px;">
+        <button class="btn primary" type="submit">Verify</button>
+        <a class="btn" href="{{ url_for('auth.reset_request') }}">Back</a>
+    </div>
+</form>
+{% endblock %}

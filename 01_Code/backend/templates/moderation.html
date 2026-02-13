@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Moderation | ClarifAI{% endblock %}
+{% block page_title %}Moderation Queue{% endblock %}
+{% block content %}
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Faculty</th>
+                <th>Sentiment</th>
+                <th>Status</th>
+                <th>Submitted On</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in pending_feedback %}
+            <tr>
+                <td>{{ item.faculty.full_name }}</td>
+                <td>{{ item.sentiment|title }}</td>
+                <td><span class="badge under_review">Under Review</span></td>
+                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">Queue is empty.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

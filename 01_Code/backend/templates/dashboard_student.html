@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard | ClarifAI{% endblock %}
+{% block page_title %}Student Dashboard{% endblock %}
+{% block content %}
+<div class="grid-3" style="margin-bottom:14px;">
+    <div class="card">
+        <small style="color:var(--muted);">Unique User Code</small>
+        <h3 style="margin:6px 0 0;">{{ student.unique_user_code }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Feedback Submitted</small>
+        <h3 style="margin:6px 0 0;">{{ feedback_items|length }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Checklist Completion</small>
+        <h3 style="margin:6px 0 8px;">{{ progress_percent }}%</h3>
+        <div class="progress"><span style="width:{{ progress_percent }}%"></span></div>
+    </div>
+</div>
+
+<div class="space-between" style="margin-bottom:12px;">
+    <h3 style="margin:0;">Feedback Flow</h3>
+    <button class="btn primary" data-open-modal="feedbackModal">Submit Feedback</button>
+</div>
+
+<div class="card" style="margin-bottom:14px;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Faculty</th>
+                <th>Sentiment</th>
+                <th>Status</th>
+                <th>Submitted On</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in feedback_items %}
+            <tr>
+                <td>{{ item.faculty.full_name }}</td>
+                <td>{{ item.sentiment|title }}</td>
+                <td><span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span></td>
+                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4">No submissions yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3 style="margin-top:0;">Checklist Progress</h3>
+        {% for item in checklists %}
+            <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=item.id) }}" class="space-between" style="margin-bottom:9px;">
+                <div>
+                    <strong>{{ item.title }}</strong>
+                    <div style="color:var(--muted);">Assigned by {{ item.faculty.full_name }}</div>
+                </div>
+                <button class="btn {{ 'success' if item.is_completed else '' }}" type="submit">
+                    {{ 'Completed' if item.is_completed else 'Mark Done' }}
+                </button>
+            </form>
+        {% else %}
+            <p>No checklist items assigned.</p>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <div class="space-between">
+            <h3 style="margin-top:0;">Knowledge Board</h3>
+            <a class="btn" href="{{ url_for('student.knowledge_board') }}">View All</a>
+        </div>
+        {% for post in posts %}
+            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+                <strong>{{ post.title }}</strong>
+                <div style="color:var(--muted);">{{ post.author.full_name }} • {{ post.created_at.strftime('%d %b %Y') }}</div>
+            </div>
+        {% else %}
+            <p>No posts yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal" id="feedbackModal">
+    <div class="modal-card">
+        <div class="space-between">
+            <h3 style="margin-top:0;">Submit Feedback</h3>
+            <button class="btn" type="button" data-close-modal>Close</button>
+        </div>
+        <form method="post" action="{{ url_for('student.submit_feedback') }}">
+            <label class="label">Faculty</label>
+            <select name="faculty_id" required>
+                <option value="">Select faculty</option>
+                {% for faculty in faculty_list %}
+                    <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.faculty_id }})</option>
+                {% endfor %}
+            </select>
+
+            <label class="label">Feedback</label>
+            <textarea name="feedback_text" required></textarea>
+
+            <div class="flex" style="margin-top:14px;">
+                <button class="btn primary" type="submit">Submit</button>
+                <button class="btn" type="button" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

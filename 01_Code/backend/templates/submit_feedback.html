@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Submit Feedback | ClarifAI{% endblock %}
+{% block page_title %}Submit Feedback{% endblock %}
+{% block content %}
+<div class="card">
+    <form method="post" action="{{ url_for('student.submit_feedback') }}">
+        <label class="label">Faculty</label>
+        <select name="faculty_id" required>
+            <option value="">Select faculty</option>
+            {% for faculty in faculty_list %}
+                <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.faculty_id }})</option>
+            {% endfor %}
+        </select>
+
+        <label class="label">Feedback</label>
+        <textarea name="feedback_text" required></textarea>
+
+        <div style="margin-top:14px;">
+            <button class="btn primary" type="submit">Submit</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

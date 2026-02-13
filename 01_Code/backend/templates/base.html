@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ClarifAI{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% set content_block %}{% block content %}{% endblock %}{% endset %}
+{% set is_auth = request.endpoint in ['home', 'auth.login', 'auth.register', 'auth.reset_request', 'auth.reset_verify', 'auth.reset_password'] %}
+{% if is_auth %}
+    <main class="auth-shell">
+        <div class="auth-card card">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-wrap">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+            {{ content_block }}
+        </div>
+    </main>
+{% else %}
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="brand">ClarifAI MCA</div>
+            <div class="nav-links">
+                {% if session.get('role') == 'student' %}
+                    <a href="{{ url_for('student.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                    <a href="{{ url_for('student.knowledge_board') }}"><i data-lucide="book-open"></i> Knowledge Board</a>
+                    <a href="{{ url_for('student.knowledge_post') }}"><i data-lucide="square-pen"></i> New Post</a>
+                {% elif session.get('role') == 'faculty' %}
+                    <a href="{{ url_for('faculty.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                {% elif session.get('role') == 'admin' %}
+                    <a href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                    <a href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation</a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-wrap">
+            <div class="topbar">
+                <div>
+                    <h2 style="margin: 0;">{% block page_title %}Dashboard{% endblock %}</h2>
+                    <small style="color: var(--muted);">MCA Department Feedback & Knowledge System</small>
+                </div>
+                <button class="btn" id="themeToggle"><i data-lucide="moon"></i> Theme</button>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-wrap">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            {{ content_block }}
+        </main>
+    </div>
+{% endif %}
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

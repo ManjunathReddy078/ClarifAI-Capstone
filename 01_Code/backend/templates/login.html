@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Login | ClarifAI{% endblock %}
+{% block content %}
+<h2 style="margin-top:0;">Sign In</h2>
+<p style="color: var(--muted);">Login using your registered MCA account.</p>
+<form method="post">
+    <label class="label">Email</label>
+    <input type="email" name="email" required>
+
+    <label class="label">Password</label>
+    <div class="password-row">
+        <input type="password" name="password" id="loginPassword" required>
+        <button class="btn" type="button" data-toggle-password="loginPassword">Peek</button>
+    </div>
+
+    <div class="flex" style="margin-top:14px;">
+        <button class="btn primary" type="submit">Login</button>
+        <a class="btn" href="{{ url_for('auth.register') }}">Register</a>
+        <a class="btn" href="{{ url_for('auth.reset_request') }}">Forgot Password</a>
+    </div>
+</form>
+{% endblock %}
