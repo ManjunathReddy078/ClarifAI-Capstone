@@ -1,6 +1,7 @@
 import random
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
+from sqlalchemy import text
 
 from config import Config
 from models import WebsiteFeedback, db
@@ -31,6 +32,7 @@ def _bootstrap_admin(app: Flask) -> None:
     security_answer = (app.config.get("ADMIN_SECURITY_ANSWER") or "").strip()
 
     if not email or not full_name or not password or not security_question or not security_answer:
+        app.logger.warning("Admin bootstrap is enabled but configuration is incomplete.")
         return
 
     admin_user = User.query.filter_by(email=email).first()
@@ -62,6 +64,33 @@ def _bootstrap_admin(app: Flask) -> None:
     db.session.commit()
 
 
+def _ensure_schema_updates() -> None:
+    feedback_columns = {
+        row[1]
+        for row in db.session.execute(text("PRAGMA table_info('feedback')")).fetchall()
+    }
+
+    alter_statements = []
+    if "subject" not in feedback_columns:
+        alter_statements.append(
+            "ALTER TABLE feedback ADD COLUMN subject VARCHAR(120) NOT NULL DEFAULT ''"
+        )
+    if "semester" not in feedback_columns:
+        alter_statements.append(
+            "ALTER TABLE feedback ADD COLUMN semester VARCHAR(20) NOT NULL DEFAULT ''"
+        )
+    if "reason" not in feedback_columns:
+        alter_statements.append(
+            "ALTER TABLE feedback ADD COLUMN reason VARCHAR(180) NOT NULL DEFAULT ''"
+        )
+
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+
+    if alter_statements:
+        db.session.commit()
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -74,6 +103,15 @@ def create_app() -> Flask:
 
     @app.route("/", methods=["GET", "POST"])
     def home():
+        role = session.get("role") if session.get("user_id") else None
+        dashboard_url = None
+        if role == "student":
+            dashboard_url = url_for("student.dashboard")
+        elif role == "faculty":
+            dashboard_url = url_for("faculty.dashboard")
+        elif role == "admin":
+            dashboard_url = url_for("admin.dashboard")
+
         if request.method == "POST":
             visitor_name = request.form.get("visitor_name", "").strip()
             visitor_email = request.form.get("visitor_email", "").strip().lower()
@@ -81,7 +119,7 @@ def create_app() -> Flask:
 
             if not visitor_name or not visitor_email or not message:
                 flash("Please fill all website feedback fields.", "danger")
-                return render_template("home.html")
+                return render_template("home.html", dashboard_url=dashboard_url, user_role=role)
 
             website_feedback = WebsiteFeedback(
                 visitor_name=visitor_name,
@@ -93,20 +131,11 @@ def create_app() -> Flask:
             flash("Thank you! Your suggestion has been submitted.", "success")
             return redirect(url_for("home"))
 
-        if "user_id" not in session:
-            return render_template("home.html")
-
-        role = session.get("role")
-        if role == "student":
-            return redirect(url_for("student.dashboard"))
-        if role == "faculty":
-            return redirect(url_for("faculty.dashboard"))
-        if role == "admin":
-            return redirect(url_for("admin.dashboard"))
-        return redirect(url_for("auth.logout"))
+        return render_template("home.html", dashboard_url=dashboard_url, user_role=role)
 
     with app.app_context():
         db.create_all()
+        _ensure_schema_updates()
         _bootstrap_admin(app)
 
     return app

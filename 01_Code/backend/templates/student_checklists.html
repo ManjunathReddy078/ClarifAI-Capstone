@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}My Checklists | ClarifAI{% endblock %}
+{% block page_title %}My Checklists{% endblock %}
+{% block content %}
+<div class="space-between" style="margin-bottom:12px;">
+    <h3 style="margin:0;">Assigned Checklists</h3>
+    <div class="flex">
+        <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('student.my_checklists', status='all') }}">All</a>
+        <a class="btn {{ 'primary' if status == 'pending' else '' }}" href="{{ url_for('student.my_checklists', status='pending') }}">Pending</a>
+        <a class="btn {{ 'primary' if status == 'completed' else '' }}" href="{{ url_for('student.my_checklists', status='completed') }}">Completed</a>
+    </div>
+</div>
+
+<div class="card">
+    {% for item in checklists %}
+        <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=item.id) }}" class="space-between" style="padding:10px 0; border-bottom:1px solid var(--border);">
+            <div>
+                <strong>{{ item.title }}</strong>
+                {% if item.description %}<div>{{ item.description }}</div>{% endif %}
+                <div style="color:var(--muted);">Assigned by {{ item.faculty.full_name }} • {{ item.created_at.strftime('%d %b %Y') }}</div>
+            </div>
+            <button class="btn {{ 'success' if item.is_completed else '' }}" type="submit">
+                {{ 'Completed' if item.is_completed else 'Mark Done' }}
+            </button>
+        </form>
+    {% else %}
+        <p>No checklist items found.</p>
+    {% endfor %}
+</div>
+{% endblock %}

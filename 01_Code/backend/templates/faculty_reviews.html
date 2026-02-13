@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Faculty Feedback Insights | ClarifAI{% endblock %}
+{% block page_title %}Feedback Insights{% endblock %}
+{% block content %}
+<div class="grid-4" style="margin-bottom:14px;">
+    <div class="card">
+        <small style="color:var(--muted);">Total Approved</small>
+        <h3 style="margin:6px 0 0;">{{ kpi.total }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Positive</small>
+        <h3 style="margin:6px 0 0;">{{ kpi.positive }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Neutral</small>
+        <h3 style="margin:6px 0 0;">{{ kpi.neutral }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Negative</small>
+        <h3 style="margin:6px 0 0;">{{ kpi.negative }}</h3>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:14px;">
+    <form method="get" class="grid-2" style="align-items:end;">
+        <div>
+            <label class="label">Search</label>
+            <input type="text" name="q" value="{{ search }}" placeholder="Subject / semester / reason / text">
+        </div>
+        <div>
+            <label class="label">Sentiment</label>
+            <select name="sentiment">
+                <option value="all" {{ 'selected' if sentiment == 'all' else '' }}>All</option>
+                <option value="positive" {{ 'selected' if sentiment == 'positive' else '' }}>Positive</option>
+                <option value="neutral" {{ 'selected' if sentiment == 'neutral' else '' }}>Neutral</option>
+                <option value="negative" {{ 'selected' if sentiment == 'negative' else '' }}>Negative</option>
+            </select>
+        </div>
+        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('faculty.reviews') }}">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Semester</th>
+                <th>Reason</th>
+                <th>Feedback</th>
+                <th>Sentiment</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in reviews %}
+            <tr>
+                <td>{{ item.subject }}</td>
+                <td>{{ item.semester }}</td>
+                <td>{{ item.reason }}</td>
+                <td>{{ item.feedback_text }}</td>
+                <td>{{ item.sentiment|title }}</td>
+                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6">No approved feedback found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

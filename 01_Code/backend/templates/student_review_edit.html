@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Edit Review | ClarifAI{% endblock %}
+{% block page_title %}Edit Review{% endblock %}
+{% block content %}
+<div class="card">
+    <form method="post">
+        <label class="label">Faculty</label>
+        <select name="faculty_id" required>
+            <option value="">Select faculty</option>
+            {% for faculty in faculty_list %}
+                <option value="{{ faculty.id }}" {{ 'selected' if faculty.id == feedback_item.faculty_id else '' }}>
+                    {{ faculty.full_name }} ({{ faculty.faculty_id }})
+                </option>
+            {% endfor %}
+        </select>
+
+        <label class="label">Subject / Course</label>
+        <input type="text" name="subject" value="{{ feedback_item.subject }}" required>
+
+        <label class="label">Semester</label>
+        <input type="text" name="semester" value="{{ feedback_item.semester }}" required>
+
+        <label class="label">Reason</label>
+        <input type="text" name="reason" value="{{ feedback_item.reason }}" required>
+
+        <label class="label">Review Text</label>
+        <textarea name="feedback_text" required>{{ feedback_item.feedback_text }}</textarea>
+
+        <div class="flex" style="margin-top:14px;">
+            <button class="btn primary" type="submit">Save Changes</button>
+            <a class="btn" href="{{ url_for('student.reviews') }}">Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

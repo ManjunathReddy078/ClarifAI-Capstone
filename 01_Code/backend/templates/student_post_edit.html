@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Edit Knowledge Post | ClarifAI{% endblock %}
+{% block page_title %}Edit Knowledge Post{% endblock %}
+{% block content %}
+<div class="card">
+    <form method="post">
+        <label class="label">Title</label>
+        <input type="text" name="title" value="{{ post.title }}" required>
+
+        <label class="label">Content</label>
+        <textarea name="content" required>{{ post.content }}</textarea>
+
+        <div class="flex" style="margin-top:14px;">
+            <button class="btn primary" type="submit">Save Changes</button>
+            <a class="btn" href="{{ url_for('student.my_knowledge_posts') }}">Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

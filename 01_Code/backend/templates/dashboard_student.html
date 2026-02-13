@@ -8,8 +8,8 @@
         <h3 style="margin:6px 0 0;">{{ student.unique_user_code }}</h3>
     </div>
     <div class="card">
-        <small style="color:var(--muted);">Feedback Submitted</small>
-        <h3 style="margin:6px 0 0;">{{ feedback_items|length }}</h3>
+        <small style="color:var(--muted);">Reviews Submitted</small>
+        <h3 style="margin:6px 0 0;">{{ total_feedback }}</h3>
     </div>
     <div class="card">
         <small style="color:var(--muted);">Checklist Completion</small>
@@ -19,8 +19,11 @@
 </div>
 
 <div class="space-between" style="margin-bottom:12px;">
-    <h3 style="margin:0;">Feedback Flow</h3>
-    <button class="btn primary" data-open-modal="feedbackModal">Submit Feedback</button>
+    <h3 style="margin:0;">Review Flow</h3>
+    <div class="flex">
+        <a class="btn" href="{{ url_for('student.reviews') }}">My Reviews</a>
+        <button class="btn primary" data-open-modal="feedbackModal">Submit Feedback</button>
+    </div>
 </div>
 
 <div class="card" style="margin-bottom:14px;">
@@ -96,6 +99,15 @@
                     <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.faculty_id }})</option>
                 {% endfor %}
             </select>
+
+            <label class="label">Subject / Course</label>
+            <input type="text" name="subject" placeholder="e.g. Data Structures" required>
+
+            <label class="label">Semester</label>
+            <input type="text" name="semester" placeholder="e.g. Semester 2" required>
+
+            <label class="label">Reason</label>
+            <input type="text" name="reason" placeholder="e.g. Teaching quality" required>
 
             <label class="label">Feedback</label>
             <textarea name="feedback_text" required></textarea>

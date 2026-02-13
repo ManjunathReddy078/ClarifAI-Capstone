@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Edit Checklist | ClarifAI{% endblock %}
+{% block page_title %}Edit Checklist{% endblock %}
+{% block content %}
+<div class="card">
+    <form method="post">
+        <label class="label">Title</label>
+        <input type="text" name="title" value="{{ checklist.title }}" required>
+
+        <label class="label">Description</label>
+        <textarea name="description">{{ checklist.description or '' }}</textarea>
+
+        <label class="label">Student Email</label>
+        <input type="email" name="student_email" value="{{ checklist.student.email }}" required>
+
+        <div class="flex" style="margin-top:14px;">
+            <button class="btn primary" type="submit">Save Changes</button>
+            <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

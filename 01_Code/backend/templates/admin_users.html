@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}User Management | ClarifAI{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:14px;">
+    <form method="get" class="grid-3" style="align-items:end;">
+        <div>
+            <label class="label">Search</label>
+            <input type="text" name="q" value="{{ search }}" placeholder="Name / email / code">
+        </div>
+        <div>
+            <label class="label">Role</label>
+            <select name="role">
+                <option value="all" {{ 'selected' if role == 'all' else '' }}>All</option>
+                <option value="student" {{ 'selected' if role == 'student' else '' }}>Student</option>
+                <option value="faculty" {{ 'selected' if role == 'faculty' else '' }}>Faculty</option>
+                <option value="admin" {{ 'selected' if role == 'admin' else '' }}>Admin</option>
+            </select>
+        </div>
+        <div>
+            <label class="label">Status</label>
+            <select name="status">
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All</option>
+                <option value="active" {{ 'selected' if status == 'active' else '' }}>Active</option>
+                <option value="inactive" {{ 'selected' if status == 'inactive' else '' }}>Inactive</option>
+            </select>
+        </div>
+        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
+            <button class="btn primary" type="submit">Apply Filters</button>
+            <a class="btn" href="{{ url_for('admin.users') }}">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Code</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for user in users_list %}
+            <tr>
+                <td>{{ user.full_name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.unique_user_code }}</td>
+                <td>{{ user.role|title }}</td>
+                <td><span class="badge {{ 'approved' if user.is_active else 'rejected' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
+                <td>{{ user.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.toggle_user_active', user_id=user.id) }}">
+                        <button class="btn {{ 'warning' if user.is_active else 'success' }}" type="submit">
+                            {{ 'Deactivate' if user.is_active else 'Activate' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7">No users found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

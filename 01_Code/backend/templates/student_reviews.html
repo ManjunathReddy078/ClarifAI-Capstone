@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}My Reviews | ClarifAI{% endblock %}
+{% block page_title %}My Reviews{% endblock %}
+{% block content %}
+<div class="space-between" style="margin-bottom:12px;">
+    <h3 style="margin:0;">Review Management</h3>
+    <button class="btn primary" data-open-modal="reviewModal">Submit Review</button>
+</div>
+
+<div class="card" style="margin-bottom:14px;">
+    <form method="get" class="grid-3" style="align-items:end;">
+        <div>
+            <label class="label">Search</label>
+            <input type="text" name="q" value="{{ search }}" placeholder="Faculty / subject / reason / text">
+        </div>
+        <div>
+            <label class="label">Sentiment</label>
+            <select name="sentiment">
+                <option value="all" {{ 'selected' if sentiment == 'all' else '' }}>All</option>
+                <option value="positive" {{ 'selected' if sentiment == 'positive' else '' }}>Positive</option>
+                <option value="neutral" {{ 'selected' if sentiment == 'neutral' else '' }}>Neutral</option>
+                <option value="negative" {{ 'selected' if sentiment == 'negative' else '' }}>Negative</option>
+            </select>
+        </div>
+        <div>
+            <label class="label">Status</label>
+            <select name="status">
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All</option>
+                <option value="under_review" {{ 'selected' if status == 'under_review' else '' }}>Under Review</option>
+                <option value="approved" {{ 'selected' if status == 'approved' else '' }}>Approved</option>
+                <option value="rejected" {{ 'selected' if status == 'rejected' else '' }}>Rejected</option>
+                <option value="request_edit" {{ 'selected' if status == 'request_edit' else '' }}>Request Edit</option>
+            </select>
+        </div>
+        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
+            <button class="btn primary" type="submit">Apply Filters</button>
+            <a class="btn" href="{{ url_for('student.reviews') }}">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Faculty</th>
+                <th>Subject</th>
+                <th>Semester</th>
+                <th>Reason</th>
+                <th>Sentiment</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in feedback_items %}
+            <tr>
+                <td>{{ item.faculty.full_name }}</td>
+                <td>{{ item.subject }}</td>
+                <td>{{ item.semester }}</td>
+                <td>{{ item.reason }}</td>
+                <td>{{ item.sentiment|title }}</td>
+                <td><span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span></td>
+                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+                <td>
+                    <div class="flex">
+                        <a class="btn" href="{{ url_for('student.edit_review', feedback_id=item.id) }}">Edit</a>
+                        <form method="post" action="{{ url_for('student.delete_review', feedback_id=item.id) }}" onsubmit="return confirm('Delete this review?');">
+                            <button class="btn danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="8">No reviews found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="modal" id="reviewModal">
+    <div class="modal-card">
+        <div class="space-between">
+            <h3 style="margin-top:0;">Submit Review</h3>
+            <button class="btn" type="button" data-close-modal>Close</button>
+        </div>
+        <form method="post" action="{{ url_for('student.create_review') }}">
+            <label class="label">Faculty</label>
+            <select name="faculty_id" required>
+                <option value="">Select faculty</option>
+                {% for faculty in faculty_list %}
+                    <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.faculty_id }})</option>
+                {% endfor %}
+            </select>
+
+            <label class="label">Subject / Course</label>
+            <input type="text" name="subject" required>
+
+            <label class="label">Semester</label>
+            <input type="text" name="semester" required>
+
+            <label class="label">Reason</label>
+            <input type="text" name="reason" required>
+
+            <label class="label">Review Text</label>
+            <textarea name="feedback_text" required></textarea>
+
+            <div class="flex" style="margin-top:14px;">
+                <button class="btn primary" type="submit">Submit</button>
+                <button class="btn" type="button" data-close-modal>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

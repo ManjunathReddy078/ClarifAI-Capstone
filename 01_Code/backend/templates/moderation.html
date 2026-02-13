@@ -2,28 +2,58 @@
 {% block title %}Moderation | ClarifAI{% endblock %}
 {% block page_title %}Moderation Queue{% endblock %}
 {% block content %}
+<div class="card" style="margin-bottom:14px;">
+    <form method="get" class="grid-3" style="align-items:end;">
+        <div>
+            <label class="label">Search</label>
+            <input type="text" name="q" value="{{ search }}" placeholder="Subject / reason / text">
+        </div>
+        <div>
+            <label class="label">Sentiment</label>
+            <select name="sentiment">
+                <option value="all" {{ 'selected' if sentiment == 'all' else '' }}>All</option>
+                <option value="positive" {{ 'selected' if sentiment == 'positive' else '' }}>Positive</option>
+                <option value="neutral" {{ 'selected' if sentiment == 'neutral' else '' }}>Neutral</option>
+                <option value="negative" {{ 'selected' if sentiment == 'negative' else '' }}>Negative</option>
+            </select>
+        </div>
+        <div>
+            <label class="label">Faculty</label>
+            <select name="faculty">
+                <option value="all">All</option>
+                {% for fac in faculty_list %}
+                    <option value="{{ fac.email }}" {{ 'selected' if faculty == fac.email else '' }}>{{ fac.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
+            <button class="btn primary" type="submit">Apply Filters</button>
+            <a class="btn" href="{{ url_for('admin.moderation_page') }}">Reset</a>
+        </div>
+    </form>
+</div>
+
 <div class="card">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Faculty</th>
-                <th>Sentiment</th>
-                <th>Status</th>
-                <th>Submitted On</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in pending_feedback %}
-            <tr>
-                <td>{{ item.faculty.full_name }}</td>
-                <td>{{ item.sentiment|title }}</td>
-                <td><span class="badge under_review">Under Review</span></td>
-                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="4">Queue is empty.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% for item in pending_feedback %}
+        <div class="card" style="margin-bottom:10px;">
+            <div style="margin-bottom:8px;">
+                <strong>For Faculty:</strong> {{ item.faculty.full_name }}
+                <div style="color:var(--muted);">Subject: {{ item.subject }} • Semester: {{ item.semester }} • Reason: {{ item.reason }}</div>
+            </div>
+            <p style="margin-top:0;">{{ item.feedback_text }}</p>
+            <form method="post" action="{{ url_for('admin.moderate', feedback_id=item.id) }}">
+                <input type="hidden" name="next_url" value="{{ request.full_path if request.query_string else request.path }}">
+                <label class="label">Admin Note (optional)</label>
+                <textarea name="note"></textarea>
+                <div class="flex" style="margin-top:10px;">
+                    <button class="btn success" name="action" value="approve" type="submit">Approve</button>
+                    <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
+                    <button class="btn warning" name="action" value="request_edit" type="submit">Request Edit</button>
+                </div>
+            </form>
+        </div>
+    {% else %}
+        <p>Queue is empty.</p>
+    {% endfor %}
 </div>
 {% endblock %}

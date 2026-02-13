@@ -2,6 +2,39 @@
 {% block title %}Admin Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Admin Dashboard{% endblock %}
 {% block content %}
+<div class="grid-3" style="margin-bottom:14px;">
+    <div class="card">
+        <small style="color:var(--muted);">Students</small>
+        <h3 style="margin:6px 0 0;">{{ user_counts.students }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Faculty</small>
+        <h3 style="margin:6px 0 0;">{{ user_counts.faculty }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Active Accounts</small>
+        <h3 style="margin:6px 0 0;">{{ user_counts.active }}</h3>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:14px;">
+    <div class="space-between">
+        <h3 style="margin:0;">Recent Registrations</h3>
+        <div class="flex">
+            <a class="btn" href="{{ url_for('admin.moderation_page') }}">Open Moderation Console</a>
+            <a class="btn" href="{{ url_for('admin.users') }}">Open User Management</a>
+        </div>
+    </div>
+    {% for user in recent_users %}
+        <div style="border-bottom:1px solid var(--border); padding:8px 0;">
+            <strong>{{ user.full_name }}</strong>
+            <div style="color:var(--muted);">{{ user.email }} • {{ user.role|title }} • {{ 'Active' if user.is_active else 'Inactive' }}</div>
+        </div>
+    {% else %}
+        <p>No users found.</p>
+    {% endfor %}
+</div>
+
 <div class="grid-2" style="margin-bottom:14px;">
     <div class="card">
         <h3 style="margin-top:0;">Moderation Queue</h3>

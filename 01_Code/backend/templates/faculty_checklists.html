@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Manage Checklists | ClarifAI{% endblock %}
+{% block page_title %}Manage Checklists{% endblock %}
+{% block content %}
+<div class="space-between" style="margin-bottom:12px;">
+    <h3 style="margin:0;">Checklist Records</h3>
+    <div class="flex">
+        <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('faculty.checklists_page', status='all') }}">All</a>
+        <a class="btn {{ 'primary' if status == 'pending' else '' }}" href="{{ url_for('faculty.checklists_page', status='pending') }}">Pending</a>
+        <a class="btn {{ 'primary' if status == 'completed' else '' }}" href="{{ url_for('faculty.checklists_page', status='completed') }}">Completed</a>
+    </div>
+</div>
+
+<div class="card">
+    {% for item in checklists %}
+        <div class="space-between" style="padding:10px 0; border-bottom:1px solid var(--border);">
+            <div>
+                <strong>{{ item.title }}</strong>
+                {% if item.description %}<div>{{ item.description }}</div>{% endif %}
+                <div style="color:var(--muted);">{{ item.student.full_name }} ({{ item.student.email }}) • {{ item.created_at.strftime('%d %b %Y') }}</div>
+                <span class="badge {{ 'approved' if item.is_completed else 'under_review' }}">{{ 'Completed' if item.is_completed else 'Pending' }}</span>
+            </div>
+            <div class="flex">
+                <a class="btn" href="{{ url_for('faculty.edit_checklist', checklist_id=item.id) }}">Edit</a>
+                <form method="post" action="{{ url_for('faculty.delete_checklist', checklist_id=item.id) }}" onsubmit="return confirm('Delete this checklist?');">
+                    <button class="btn danger" type="submit">Delete</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <p>No checklist items found.</p>
+    {% endfor %}
+</div>
+{% endblock %}

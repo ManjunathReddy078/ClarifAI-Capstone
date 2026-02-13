@@ -2,6 +2,26 @@
 {% block title %}Faculty Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Faculty Dashboard{% endblock %}
 {% block content %}
+<div class="grid-3" style="margin-bottom:14px;">
+    <div class="card">
+        <small style="color:var(--muted);">Total Checklists</small>
+        <h3 style="margin:6px 0 0;">{{ checklists|length }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Completed</small>
+        <h3 style="margin:6px 0 0;">{{ completed_count }}</h3>
+    </div>
+    <div class="card">
+        <small style="color:var(--muted);">Pending</small>
+        <h3 style="margin:6px 0 0;">{{ pending_count }}</h3>
+    </div>
+</div>
+
+<div class="flex" style="margin-bottom:12px;">
+    <a class="btn" href="{{ url_for('faculty.reviews') }}">Feedback Insights</a>
+    <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Manage Checklists</a>
+</div>
+
 <div class="grid-2">
     <div class="card">
         <h3 style="margin-top:0;">Create Checklist</h3>

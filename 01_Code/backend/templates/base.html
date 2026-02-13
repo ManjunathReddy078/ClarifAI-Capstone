@@ -11,10 +11,22 @@
 </head>
 <body>
 {% set content_block %}{% block content %}{% endblock %}{% endset %}
-{% set is_auth = request.endpoint in ['home', 'auth.login', 'auth.register', 'auth.reset_request', 'auth.reset_verify', 'auth.reset_password'] %}
-{% if is_auth %}
+{% set is_home = request.endpoint == 'home' %}
+{% set is_auth = request.endpoint in ['auth.login', 'auth.register', 'auth.reset_request', 'auth.reset_verify', 'auth.reset_password'] %}
+{% if is_home %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="home-flash-wrap">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    {{ content_block }}
+{% elif is_auth %}
     <main class="auth-shell">
-        <div class="auth-card card">
+        <div class="auth-card auth-wide card">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 <div class="flash-wrap">
@@ -34,13 +46,19 @@
             <div class="nav-links">
                 {% if session.get('role') == 'student' %}
                     <a href="{{ url_for('student.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                    <a href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Reviews</a>
+                    <a href="{{ url_for('student.my_checklists') }}"><i data-lucide="list-checks"></i> My Checklists</a>
                     <a href="{{ url_for('student.knowledge_board') }}"><i data-lucide="book-open"></i> Knowledge Board</a>
+                    <a href="{{ url_for('student.my_knowledge_posts') }}"><i data-lucide="square-stack"></i> My Posts</a>
                     <a href="{{ url_for('student.knowledge_post') }}"><i data-lucide="square-pen"></i> New Post</a>
                 {% elif session.get('role') == 'faculty' %}
                     <a href="{{ url_for('faculty.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                    <a href="{{ url_for('faculty.reviews') }}"><i data-lucide="message-square-text"></i> Feedback Insights</a>
+                    <a href="{{ url_for('faculty.checklists_page') }}"><i data-lucide="list-checks"></i> Manage Checklists</a>
                 {% elif session.get('role') == 'admin' %}
                     <a href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
                     <a href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation</a>
+                    <a href="{{ url_for('admin.users') }}"><i data-lucide="users"></i> User Management</a>
                 {% endif %}
                 <a href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Logout</a>
             </div>

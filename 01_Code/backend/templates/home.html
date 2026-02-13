@@ -1,71 +1,125 @@
 {% extends 'base.html' %}
 {% block title %}ClarifAI | MCA Feedback Intelligence{% endblock %}
 {% block content %}
-<section class="home-hero card">
-    <h1 style="margin-top:0;">ClarifAI: MCA Feedback Intelligence Platform</h1>
-    <p style="color:var(--muted); margin-bottom:16px;">
-        A role-based academic system for secure feedback, sentiment-aware moderation, and quality improvements across the MCA department.
-    </p>
-    <div class="flex">
-        <a class="btn primary" href="{{ url_for('auth.login') }}">Login</a>
-        <a class="btn" href="{{ url_for('auth.register') }}">Sign Up</a>
-    </div>
-</section>
+<div class="landing-shell">
+    <header class="landing-header">
+        <a class="landing-logo-wrap" href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='logos/ClarifAI-.png') }}" alt="ClarifAI" class="landing-logo full-logo">
+            <span>ClarifAI</span>
+        </a>
+        <nav class="landing-nav">
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
+            {% if session.get('user_id') and dashboard_url %}
+                <a class="btn" href="{{ dashboard_url }}">Dashboard</a>
+                <span class="profile-chip">{{ user_role[0]|upper }}</span>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a class="btn primary" href="{{ url_for('auth.register') }}">Sign Up</a>
+            {% endif %}
+        </nav>
+    </header>
 
-<section class="grid-3" style="margin-top:14px;">
-    <div class="card">
-        <h3 style="margin-top:0;">Key Features</h3>
-        <ul>
-            <li>Role-based dashboards (Student/Faculty/Admin)</li>
-            <li>Sentiment-powered feedback moderation flow</li>
-            <li>Knowledge board and checklist tracking</li>
-            <li>Secure login and recovery with hashed credentials</li>
-        </ul>
-    </div>
-    <div class="card">
-        <h3 style="margin-top:0;">Importance</h3>
-        <ul>
-            <li>Improves transparency in academic feedback</li>
-            <li>Promotes constructive and moderated communication</li>
-            <li>Supports faculty performance insights</li>
-            <li>Encourages continuous quality enhancement</li>
-        </ul>
-    </div>
-    <div class="card">
-        <h3 style="margin-top:0;">Uniqueness</h3>
-        <ul>
-            <li>MCA-specific whitelist registration control</li>
-            <li>Anonymous identity view for faculty feedback</li>
-            <li>Hybrid auto-approval + admin moderation model</li>
-            <li>Integrated academic knowledge and action checklists</li>
-        </ul>
-    </div>
-</section>
+    <section class="landing-hero" id="home">
+        <div>
+            <h1>Empower Your Voice, Elevate Education.</h1>
+            <p>
+                ClarifAI Connect is a platform where students share insights and faculty foster growth.
+                Transform feedback into measurable progress for the MCA department.
+            </p>
+            {% if session.get('user_id') and dashboard_url %}
+                <a class="btn primary" href="{{ dashboard_url }}">Get Started</a>
+            {% else %}
+                <a class="btn primary" href="{{ url_for('auth.register') }}">Get Started</a>
+            {% endif %}
+        </div>
+        <div class="hero-visual card floating-soft">
+            <img src="{{ url_for('static', filename='logos/ClarifAI_transparent-.png') }}" alt="ClarifAI Logo">
+        </div>
+    </section>
 
-<section class="grid-2" style="margin-top:14px;">
-    <div class="card">
-        <h3 style="margin-top:0;">Contact Details</h3>
-        <p><strong>Department:</strong> MCA Department</p>
-        <p><strong>Project:</strong> ClarifAI Web + AI Feedback System</p>
-        <p><strong>Email:</strong> seelammanjunathreddy6@gmail.com</p>
-        <p><strong>Support:</strong> Contact department admin for account issues.</p>
-    </div>
-    <div class="card">
-        <h3 style="margin-top:0;">Website Feedback / Improvement Suggestion</h3>
-        <form method="post" action="{{ url_for('home') }}">
-            <label class="label">Your Name</label>
-            <input type="text" name="visitor_name" required>
+    <section id="features" class="landing-section">
+        <h2>Unlock the Power of Connection</h2>
+        <div class="landing-features">
+            <article class="feature-card float-loop">
+                <h4>Student Reviews</h4>
+                <p>Share your faculty experiences anonymously to foster academic improvement.</p>
+            </article>
+            <article class="feature-card float-loop delay-1">
+                <h4>Knowledge Sharing</h4>
+                <p>Exchange valuable insights, resources, and experiences with peers and faculty.</p>
+            </article>
+            <article class="feature-card float-loop delay-2">
+                <h4>Faculty Checklists</h4>
+                <p>Access curated checklist guidance to organize your academic and project work.</p>
+            </article>
+            <article class="feature-card float-loop delay-3">
+                <h4>Dashboard Analytics</h4>
+                <p>Gain actionable trends and performance summaries with intuitive dashboards.</p>
+            </article>
+        </div>
+    </section>
 
-            <label class="label">Your Email</label>
-            <input type="email" name="visitor_email" required>
-
-            <label class="label">Suggestion</label>
-            <textarea name="message" required></textarea>
-
-            <div style="margin-top:12px;">
-                <button class="btn primary" type="submit">Submit Suggestion</button>
+    <section id="about" class="landing-section mission-grid">
+        <h2>Our Mission & Vision</h2>
+        <div class="grid-2">
+            <div class="card">
+                <h3>Revolutionizing Academic Feedback</h3>
+                <p>
+                    Our mission is to create a transparent and constructive feedback ecosystem where students
+                    can voice experiences securely and faculty gain actionable insights for continuous improvement.
+                </p>
             </div>
-        </form>
-    </div>
-</section>
+            <div class="card">
+                <h3>Envisioning a Connected Campus</h3>
+                <p>
+                    Our vision is a connected learning space where knowledge sharing, mentorship, and
+                    data-informed decisions elevate academic standards consistently.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="landing-section grid-2">
+        <div class="card">
+            <h2 style="margin-top:0;">Get in Touch</h2>
+            <p>Need assistance or want to collaborate on improvements?</p>
+            <p><strong>Email:</strong> support@clarifai.edu</p>
+            <p><strong>Phone:</strong> +91 00000 00000</p>
+            <p><strong>Address:</strong> MCA Department Campus</p>
+            <a class="btn" href="mailto:support@clarifai.edu">Contact Administrator</a>
+        </div>
+        <div class="card">
+            <h3 style="margin-top:0;">Website Feedback / Improvement Suggestion</h3>
+            <form method="post" action="{{ url_for('home') }}">
+                <label class="label">Your Name</label>
+                <input type="text" name="visitor_name" required>
+
+                <label class="label">Your Email</label>
+                <input type="email" name="visitor_email" required>
+
+                <label class="label">Suggestion</label>
+                <textarea name="message" required></textarea>
+
+                <div style="margin-top:12px;">
+                    <button class="btn primary" type="submit">Submit Suggestion</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <footer class="landing-footer">
+        <div>
+            <strong>ClarifAI Connect</strong>
+            <p>Connecting academia for better insights.</p>
+        </div>
+        <div>
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
+        </div>
+        <div>© 2026 ClarifAI Connect. All rights reserved.</div>
+    </footer>
+</div>
 {% endblock %}

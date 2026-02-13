@@ -69,6 +69,9 @@ class Feedback(db.Model):
 	__tablename__ = "feedback"
 
 	id = db.Column(db.Integer, primary_key=True)
+	subject = db.Column(db.String(120), nullable=False, default="")
+	semester = db.Column(db.String(20), nullable=False, default="")
+	reason = db.Column(db.String(180), nullable=False, default="")
 	feedback_text = db.Column(db.Text, nullable=False)
 	sentiment = db.Column(db.String(20), nullable=False)
 	status = db.Column(db.String(30), nullable=False)

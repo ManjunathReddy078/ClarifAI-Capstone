@@ -1,85 +1,94 @@
 {% extends 'base.html' %}
 {% block title %}Register | ClarifAI{% endblock %}
 {% block content %}
-<h2 style="margin-top:0;">Registration</h2>
-<p style="color: var(--muted);">Whitelist-validated registration for MCA students and faculty only.</p>
-<form method="post" id="registerForm">
-    <div class="grid-2">
-        <div>
-            <label class="label">Full Name</label>
-            <input type="text" name="full_name" required>
-        </div>
-        <div>
-            <label class="label">Email</label>
-            <input type="email" name="email" required>
-        </div>
-    </div>
+<section class="auth-split">
+    <div class="auth-pane">
+        <h2 style="margin-top:0;">Create Your Account</h2>
+        <p style="color: var(--muted);">Whitelist-validated registration for MCA students and faculty only.</p>
 
-    <div class="grid-2">
-        <div>
-            <label class="label">Role</label>
-            <select name="role" id="roleSelect" required>
-                <option value="">Select role</option>
-                <option value="student">Student</option>
-                <option value="faculty">Faculty</option>
-                <option value="admin">Admin (manual only)</option>
+        <form method="post" id="registerForm" class="auth-form">
+            <div class="grid-2">
+                <div>
+                    <label class="label">Full Name</label>
+                    <input type="text" name="full_name" required>
+                </div>
+                <div>
+                    <label class="label">Email</label>
+                    <input type="email" name="email" required>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="label">Role</label>
+                    <select name="role" id="roleSelect" required>
+                        <option value="">Select role</option>
+                        <option value="student">Student</option>
+                        <option value="faculty">Faculty</option>
+                        <option value="admin">Admin (manual only)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Course</label>
+                    <input type="text" value="MCA" readonly>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div id="prnBlock" style="display:none;">
+                    <label class="label">PRN</label>
+                    <input type="text" name="prn" id="prnInput">
+                </div>
+                <div id="sectionBlock" style="display:none;">
+                    <label class="label">Section</label>
+                    <input type="text" name="section" id="sectionInput">
+                </div>
+            </div>
+
+            <div id="facultyIdBlock" style="display:none;">
+                <label class="label">Faculty ID</label>
+                <input type="text" name="faculty_id" id="facultyIdInput">
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="label">Password</label>
+                    <div class="password-row">
+                        <input type="password" name="password" id="registerPassword" required>
+                        <button class="btn" type="button" data-toggle-password="registerPassword">Peek</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="label">Confirm Password</label>
+                    <div class="password-row">
+                        <input type="password" name="confirm_password" id="registerConfirmPassword" required>
+                        <button class="btn" type="button" data-toggle-password="registerConfirmPassword">Peek</button>
+                    </div>
+                </div>
+            </div>
+
+            <label class="label">Security Question</label>
+            <select name="security_question" required>
+                <option value="">Select question</option>
+                {% for question in security_questions %}
+                    <option value="{{ question }}">{{ question }}</option>
+                {% endfor %}
             </select>
-        </div>
-        <div>
-            <label class="label">Course</label>
-            <input type="text" value="MCA" readonly>
-        </div>
-    </div>
 
-    <div class="grid-2">
-        <div id="prnBlock" style="display:none;">
-            <label class="label">PRN</label>
-            <input type="text" name="prn" id="prnInput">
-        </div>
-        <div id="sectionBlock" style="display:none;">
-            <label class="label">Section</label>
-            <input type="text" name="section" id="sectionInput">
-        </div>
-    </div>
+            <label class="label">Security Answer</label>
+            <input type="text" name="security_answer" required>
 
-    <div id="facultyIdBlock" style="display:none;">
-        <label class="label">Faculty ID</label>
-        <input type="text" name="faculty_id" id="facultyIdInput">
-    </div>
-
-    <div class="grid-2">
-        <div>
-            <label class="label">Password</label>
-            <div class="password-row">
-                <input type="password" name="password" id="registerPassword" required>
-                <button class="btn" type="button" data-toggle-password="registerPassword">Peek</button>
+            <div class="flex" style="margin-top:16px; flex-direction:column; align-items:stretch;">
+                <button class="btn primary" type="submit">Register</button>
+                <a style="color:var(--accent-2); text-decoration:none; text-align:center;" href="{{ url_for('auth.login') }}">Already have an account? Sign In</a>
             </div>
-        </div>
-        <div>
-            <label class="label">Confirm Password</label>
-            <div class="password-row">
-                <input type="password" name="confirm_password" id="registerConfirmPassword" required>
-                <button class="btn" type="button" data-toggle-password="registerConfirmPassword">Peek</button>
-            </div>
-        </div>
+        </form>
     </div>
 
-    <label class="label">Security Question</label>
-    <select name="security_question" required>
-        <option value="">Select question</option>
-        {% for question in security_questions %}
-            <option value="{{ question }}">{{ question }}</option>
-        {% endfor %}
-    </select>
-
-    <label class="label">Security Answer</label>
-    <input type="text" name="security_answer" required>
-
-    <div class="flex" style="margin-top:16px;">
-        <button class="btn primary" type="submit">Create Account</button>
-        <a class="btn" href="{{ url_for('auth.login') }}">Back to Login</a>
+    <div class="auth-visual card floating-soft">
+        <img src="{{ url_for('static', filename='logos/ClarifAI_transparent-.png') }}" alt="ClarifAI">
     </div>
-</form>
+</section>
 
 <script>
 const roleSelect = document.getElementById('roleSelect');
