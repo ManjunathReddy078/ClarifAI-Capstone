@@ -447,14 +447,7 @@ textarea {
 }
 
 .hero-visual::after {
-    content: "";
-    position: absolute;
-    width: 180%;
-    height: 2px;
-    top: 28%;
-    left: -40%;
-    background: linear-gradient(90deg, rgba(99, 102, 241, 0), rgba(6, 182, 212, 0.9), rgba(99, 102, 241, 0));
-    box-shadow: 0 0 16px rgba(6, 182, 212, 0.55);
+    display: none;
 }
 
 @keyframes floatingSoft {
