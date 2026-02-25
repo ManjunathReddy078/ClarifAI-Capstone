@@ -2,6 +2,13 @@
 {% block title %}Submit Feedback | ClarifAI{% endblock %}
 {% block page_title %}Submit Feedback{% endblock %}
 {% block content %}
+<div class="space-between" style="margin-bottom:12px;">
+    <div>
+        <h3 style="margin:0;">Submit Feedback</h3>
+        <p class="chart-subtitle">Provide constructive, actionable feedback for academic improvement</p>
+    </div>
+</div>
+
 <div class="card">
     <form method="post" action="{{ url_for('student.submit_feedback') }}">
         <label class="label">Faculty</label>

@@ -3,7 +3,10 @@
 {% block page_title %}Manage Checklists{% endblock %}
 {% block content %}
 <div class="space-between" style="margin-bottom:12px;">
-    <h3 style="margin:0;">Checklist Records</h3>
+    <div>
+        <h3 style="margin:0;">Checklist Records</h3>
+        <p class="chart-subtitle">Manage student action plans and completion tracking</p>
+    </div>
     <div class="flex">
         <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('faculty.checklists_page', status='all') }}">All</a>
         <a class="btn {{ 'primary' if status == 'pending' else '' }}" href="{{ url_for('faculty.checklists_page', status='pending') }}">Pending</a>
