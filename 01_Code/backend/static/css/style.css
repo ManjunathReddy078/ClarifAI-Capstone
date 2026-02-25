@@ -317,6 +317,15 @@ textarea {
     justify-content: space-between;
 }
 
+.chart-card {
+    min-height: 320px;
+}
+
+.chart-card canvas {
+    width: 100% !important;
+    height: 240px !important;
+}
+
 .home-hero {
     text-align: left;
     padding: 24px;

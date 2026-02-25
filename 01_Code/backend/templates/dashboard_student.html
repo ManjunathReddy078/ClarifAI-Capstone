@@ -18,6 +18,21 @@
     </div>
 </div>
 
+<div class="grid-3" style="margin-bottom:14px;">
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Monthly Submission Trend</h3>
+        <canvas id="studentTrendChart"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Sentiment Distribution</h3>
+        <canvas id="studentSentimentChart"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Moderation Status</h3>
+        <canvas id="studentStatusChart"></canvas>
+    </div>
+</div>
+
 <div class="space-between" style="margin-bottom:12px;">
     <h3 style="margin:0;">Review Flow</h3>
     <div class="flex">
@@ -119,4 +134,71 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+    const payload = {{ chart_payload | tojson }};
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--text').trim();
+    const gridColor = css.getPropertyValue('--border').trim();
+
+    const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: textColor } } },
+        scales: {
+            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+            y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+        }
+    };
+
+    new Chart(document.getElementById('studentTrendChart'), {
+        type: 'line',
+        data: {
+            labels: payload.monthly_labels,
+            datasets: [{
+                label: 'Reviews',
+                data: payload.monthly_counts,
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.18)',
+                fill: true,
+                tension: 0.35
+            }]
+        },
+        options: baseOptions
+    });
+
+    new Chart(document.getElementById('studentSentimentChart'), {
+        type: 'pie',
+        data: {
+            labels: payload.sentiment_labels,
+            datasets: [{
+                data: payload.sentiment_counts,
+                backgroundColor: ['#34d399', '#fbbf24', '#fb7185']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } }
+        }
+    });
+
+    new Chart(document.getElementById('studentStatusChart'), {
+        type: 'bar',
+        data: {
+            labels: payload.status_labels,
+            datasets: [{
+                label: 'Count',
+                data: payload.status_counts,
+                backgroundColor: ['#34d399', '#fbbf24', '#f97316', '#fb7185']
+            }]
+        },
+        options: baseOptions
+    });
+})();
+</script>
 {% endblock %}

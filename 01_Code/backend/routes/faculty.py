@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
 
@@ -6,6 +8,23 @@ from routes.auth import login_required, role_required
 
 
 faculty_bp = Blueprint("faculty", __name__, url_prefix="/faculty")
+
+
+def _last_n_month_labels(count: int = 6):
+	labels = []
+	now = datetime.utcnow()
+	year = now.year
+	month = now.month
+
+	for _ in range(count):
+		labels.append((year, month))
+		month -= 1
+		if month == 0:
+			month = 12
+			year -= 1
+
+	labels.reverse()
+	return labels
 
 
 @faculty_bp.route("/dashboard")
@@ -29,6 +48,14 @@ def dashboard():
 		.limit(5)
 		.all()
 	)
+	dashboard_chart = {
+		"labels": ["Completed Checklists", "Pending Checklists", "Resources Shared"],
+		"values": [
+			len([item for item in checklists if item.is_completed]),
+			len([item for item in checklists if not item.is_completed]),
+			KnowledgePost.query.filter_by(author_id=faculty_user.id).count(),
+		],
+	}
 
 	return render_template(
 		"dashboard_faculty.html",
@@ -37,6 +64,7 @@ def dashboard():
 		checklists=checklists,
 		recent_resources=recent_resources,
 		total_resources=KnowledgePost.query.filter_by(author_id=faculty_user.id).count(),
+		dashboard_chart=dashboard_chart,
 		completed_count=len([item for item in checklists if item.is_completed]),
 		pending_count=len([item for item in checklists if not item.is_completed]),
 	)
@@ -205,12 +233,40 @@ def reviews():
 	if sentiment in {"positive", "neutral", "negative"}:
 		query = query.filter(Feedback.sentiment == sentiment)
 
-	reviews = query.all()
 	kpi = {
 		"total": base_query.count(),
 		"positive": base_query.filter_by(sentiment="positive").count(),
 		"neutral": base_query.filter_by(sentiment="neutral").count(),
 		"negative": base_query.filter_by(sentiment="negative").count(),
+	}
+
+	reviews = query.all()
+	reason_counts = {}
+	for review in reviews:
+		reason_key = (review.reason or "Other").strip() or "Other"
+		reason_counts[reason_key] = reason_counts.get(reason_key, 0) + 1
+
+	sorted_reasons = sorted(reason_counts.items(), key=lambda item: item[1], reverse=True)[:6]
+
+	month_keys = _last_n_month_labels(6)
+	month_labels = [datetime(year=year, month=month, day=1).strftime("%b %Y") for year, month in month_keys]
+	month_positive = {f"{year:04d}-{month:02d}": 0 for year, month in month_keys}
+	month_negative = {f"{year:04d}-{month:02d}": 0 for year, month in month_keys}
+	for review in reviews:
+		key = review.created_at.strftime("%Y-%m")
+		if key in month_positive and review.sentiment == "positive":
+			month_positive[key] += 1
+		if key in month_negative and review.sentiment == "negative":
+			month_negative[key] += 1
+
+	chart_payload = {
+		"sentiment_labels": ["Positive", "Neutral", "Negative"],
+		"sentiment_values": [kpi["positive"], kpi["neutral"], kpi["negative"]],
+		"reason_labels": [item[0] for item in sorted_reasons],
+		"reason_values": [item[1] for item in sorted_reasons],
+		"trend_labels": month_labels,
+		"trend_positive": [month_positive[f"{year:04d}-{month:02d}"] for year, month in month_keys],
+		"trend_negative": [month_negative[f"{year:04d}-{month:02d}"] for year, month in month_keys],
 	}
 	return render_template(
 		"faculty_reviews.html",
@@ -218,6 +274,7 @@ def reviews():
 		search=search,
 		sentiment=sentiment,
 		kpi=kpi,
+		chart_payload=chart_payload,
 	)
 
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
 
@@ -7,6 +9,23 @@ from sentiment import analyze_sentiment
 
 
 student_bp = Blueprint("student", __name__, url_prefix="/student")
+
+
+def _last_n_month_labels(count: int = 6):
+	labels = []
+	now = datetime.utcnow()
+	year = now.year
+	month = now.month
+
+	for _ in range(count):
+		labels.append((year, month))
+		month -= 1
+		if month == 0:
+			month = 12
+			year -= 1
+
+	labels.reverse()
+	return labels
 
 
 @student_bp.route("/dashboard")
@@ -21,10 +40,46 @@ def dashboard():
 	total_feedback = Feedback.query.filter_by(student_id=student.id).count()
 	checklists = Checklist.query.filter_by(student_id=student.id).order_by(Checklist.created_at.desc()).all()
 	posts = KnowledgePost.query.order_by(KnowledgePost.created_at.desc()).limit(8).all()
+	all_feedback = Feedback.query.filter_by(student_id=student.id).order_by(Feedback.created_at.asc()).all()
 
 	total_checklists = len(checklists)
 	completed_checklists = len([item for item in checklists if item.is_completed])
 	progress_percent = int((completed_checklists / total_checklists) * 100) if total_checklists else 0
+
+	sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+	status_counts = {"approved": 0, "under_review": 0, "request_edit": 0, "rejected": 0}
+
+	for item in all_feedback:
+		if item.sentiment in sentiment_counts:
+			sentiment_counts[item.sentiment] += 1
+		if item.status in status_counts:
+			status_counts[item.status] += 1
+
+	month_keys = _last_n_month_labels(6)
+	month_label_text = [datetime(year=year, month=month, day=1).strftime("%b %Y") for year, month in month_keys]
+	month_map = {f"{year:04d}-{month:02d}": 0 for year, month in month_keys}
+	for item in all_feedback:
+		key = item.created_at.strftime("%Y-%m")
+		if key in month_map:
+			month_map[key] += 1
+
+	chart_payload = {
+		"monthly_labels": month_label_text,
+		"monthly_counts": [month_map[f"{year:04d}-{month:02d}"] for year, month in month_keys],
+		"sentiment_labels": ["Positive", "Neutral", "Negative"],
+		"sentiment_counts": [
+			sentiment_counts["positive"],
+			sentiment_counts["neutral"],
+			sentiment_counts["negative"],
+		],
+		"status_labels": ["Approved", "Under Review", "Request Edit", "Rejected"],
+		"status_counts": [
+			status_counts["approved"],
+			status_counts["under_review"],
+			status_counts["request_edit"],
+			status_counts["rejected"],
+		],
+	}
 
 	return render_template(
 		"dashboard_student.html",
@@ -35,6 +90,7 @@ def dashboard():
 		checklists=checklists,
 		posts=posts,
 		progress_percent=progress_percent,
+		chart_payload=chart_payload,
 	)
 
 

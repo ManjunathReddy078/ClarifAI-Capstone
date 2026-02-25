@@ -21,6 +21,21 @@
     </div>
 </div>
 
+<div class="grid-3" style="margin-bottom:14px;">
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Sentiment Split</h3>
+        <canvas id="facultySentimentPie"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Top Feedback Reasons</h3>
+        <canvas id="facultyReasonBar"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Monthly Sentiment Trend</h3>
+        <canvas id="facultyTrendLine"></canvas>
+    </div>
+</div>
+
 <div class="card" style="margin-bottom:14px;">
     <form method="get" class="grid-2" style="align-items:end;">
         <div>
@@ -71,4 +86,88 @@
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+    const payload = {{ chart_payload | tojson }};
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--text').trim();
+    const gridColor = css.getPropertyValue('--border').trim();
+
+    new Chart(document.getElementById('facultySentimentPie'), {
+        type: 'pie',
+        data: {
+            labels: payload.sentiment_labels,
+            datasets: [{
+                data: payload.sentiment_values,
+                backgroundColor: ['#34d399', '#fbbf24', '#fb7185']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } }
+        }
+    });
+
+    new Chart(document.getElementById('facultyReasonBar'), {
+        type: 'bar',
+        data: {
+            labels: payload.reason_labels,
+            datasets: [{
+                label: 'Count',
+                data: payload.reason_values,
+                backgroundColor: '#6366f1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true },
+                y: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('facultyTrendLine'), {
+        type: 'line',
+        data: {
+            labels: payload.trend_labels,
+            datasets: [
+                {
+                    label: 'Positive',
+                    data: payload.trend_positive,
+                    borderColor: '#34d399',
+                    backgroundColor: 'rgba(52, 211, 153, 0.16)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Negative',
+                    data: payload.trend_negative,
+                    borderColor: '#fb7185',
+                    backgroundColor: 'rgba(251, 113, 133, 0.16)',
+                    fill: true,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}

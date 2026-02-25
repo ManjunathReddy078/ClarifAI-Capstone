@@ -21,6 +21,11 @@
     </div>
 </div>
 
+<div class="card chart-card" style="margin-bottom:14px;">
+    <h3 style="margin-top:0;">Execution Overview</h3>
+    <canvas id="facultyExecutionChart"></canvas>
+</div>
+
 <div class="flex" style="margin-bottom:12px;">
     <a class="btn" href="{{ url_for('faculty.reviews') }}">Feedback Insights</a>
     <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Manage Checklists</a>
@@ -100,4 +105,37 @@
         </tbody>
     </table>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+    const payload = {{ dashboard_chart | tojson }};
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--text').trim();
+    const gridColor = css.getPropertyValue('--border').trim();
+
+    new Chart(document.getElementById('facultyExecutionChart'), {
+        type: 'bar',
+        data: {
+            labels: payload.labels,
+            datasets: [{
+                label: 'Count',
+                data: payload.values,
+                backgroundColor: ['#34d399', '#fbbf24', '#6366f1']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}
