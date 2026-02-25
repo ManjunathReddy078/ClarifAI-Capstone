@@ -2,74 +2,114 @@
 {% block title %}Student Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Student Dashboard{% endblock %}
 {% block content %}
-<div class="grid-3" style="margin-bottom:14px;">
-    <div class="card">
-        <small style="color:var(--muted);">Unique User Code</small>
-        <h3 style="margin:6px 0 0;">{{ student.unique_user_code }}</h3>
+<div class="student-hero-card" style="margin-bottom:14px;">
+    <div>
+        <p class="student-hero-title">Hello, {{ student.full_name.split(' ')[0] }} 👋</p>
+        <p class="student-hero-sub">{{ student.unique_user_code }} · MCA Student Workspace</p>
     </div>
-    <div class="card">
-        <small style="color:var(--muted);">Reviews Submitted</small>
-        <h3 style="margin:6px 0 0;">{{ total_feedback }}</h3>
+    <div class="student-hero-actions">
+        <a class="btn" href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Reviews</a>
+        <button class="btn primary" data-open-modal="feedbackModal"><i data-lucide="plus-circle"></i> Submit Feedback</button>
     </div>
-    <div class="card">
-        <small style="color:var(--muted);">Checklist Completion</small>
-        <h3 style="margin:6px 0 8px;">{{ progress_percent }}%</h3>
+</div>
+
+<div class="student-pulse-banner" style="margin-bottom:14px;">
+    <div>
+        <p class="student-pulse-main">Mid-Semester Feedback Window is Open</p>
+        <p class="student-pulse-sub">Share high-quality constructive feedback to improve teaching outcomes.</p>
+    </div>
+    <button class="btn primary" data-open-modal="feedbackModal">Submit Now</button>
+</div>
+
+<div class="grid-4" style="margin-bottom:14px;">
+    <div class="card modern-stat">
+        <div class="modern-stat-head">
+            <small>Total Submitted</small>
+            <i data-lucide="message-square" class="modern-stat-icon"></i>
+        </div>
+        <h3>{{ total_feedback }}</h3>
+        <p>This semester</p>
+    </div>
+    <div class="card modern-stat">
+        <div class="modern-stat-head">
+            <small>Approved</small>
+            <i data-lucide="check-circle-2" class="modern-stat-icon"></i>
+        </div>
+        <h3>{{ chart_payload.status_counts[0] }}</h3>
+        <p>Visible to faculty</p>
+    </div>
+    <div class="card modern-stat">
+        <div class="modern-stat-head">
+            <small>Under Review</small>
+            <i data-lucide="clock-3" class="modern-stat-icon"></i>
+        </div>
+        <h3>{{ chart_payload.status_counts[1] }}</h3>
+        <p>Awaiting moderation</p>
+    </div>
+    <div class="card modern-stat">
+        <div class="modern-stat-head">
+            <small>Checklist Progress</small>
+            <i data-lucide="list-checks" class="modern-stat-icon"></i>
+        </div>
+        <h3>{{ progress_percent }}%</h3>
         <div class="progress"><span style="width:{{ progress_percent }}%"></span></div>
     </div>
 </div>
 
 <div class="grid-3" style="margin-bottom:14px;">
     <div class="card chart-card">
-        <h3 style="margin-top:0;">Monthly Submission Trend</h3>
+        <h3 style="margin-top:0;">Department Sentiment Trend</h3>
+        <p class="chart-subtitle">Your submissions over recent months</p>
         <canvas id="studentTrendChart"></canvas>
     </div>
     <div class="card chart-card">
         <h3 style="margin-top:0;">Sentiment Distribution</h3>
+        <p class="chart-subtitle">Positive vs neutral vs negative</p>
         <canvas id="studentSentimentChart"></canvas>
     </div>
     <div class="card chart-card">
         <h3 style="margin-top:0;">Moderation Status</h3>
+        <p class="chart-subtitle">Approval pipeline visibility</p>
         <canvas id="studentStatusChart"></canvas>
     </div>
 </div>
 
-<div class="space-between" style="margin-bottom:12px;">
-    <h3 style="margin:0;">Review Flow</h3>
-    <div class="flex">
-        <a class="btn" href="{{ url_for('student.reviews') }}">My Reviews</a>
-        <button class="btn primary" data-open-modal="feedbackModal">Submit Feedback</button>
-    </div>
-</div>
-
-<div class="card" style="margin-bottom:14px;">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Faculty</th>
-                <th>Sentiment</th>
-                <th>Status</th>
-                <th>Submitted On</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for item in feedback_items %}
-            <tr>
-                <td>{{ item.faculty.full_name }}</td>
-                <td>{{ item.sentiment|title }}</td>
-                <td><span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span></td>
-                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
-            </tr>
-        {% else %}
-            <tr><td colspan="4">No submissions yet.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-
 <div class="grid-2">
     <div class="card">
-        <h3 style="margin-top:0;">Checklist Progress</h3>
-        {% for item in checklists %}
+        <div class="space-between" style="margin-bottom:12px;">
+            <h3 style="margin:0;">Recent Submissions</h3>
+            <a class="btn" href="{{ url_for('student.reviews') }}">View All</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Faculty</th>
+                    <th>Sentiment</th>
+                    <th>Status</th>
+                    <th>Submitted On</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in feedback_items %}
+                <tr>
+                    <td>{{ item.faculty.full_name }}</td>
+                    <td>{{ item.sentiment|title }}</td>
+                    <td><span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span></td>
+                    <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4">No submissions yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="space-between" style="margin-bottom:12px;">
+            <h3 style="margin:0;">My Checklist</h3>
+            <a class="btn" href="{{ url_for('student.my_checklists') }}">View All</a>
+        </div>
+        {% for item in checklists[:5] %}
             <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=item.id) }}" class="space-between" style="margin-bottom:9px;">
                 <div>
                     <strong>{{ item.title }}</strong>
@@ -83,16 +123,21 @@
             <p>No checklist items assigned.</p>
         {% endfor %}
     </div>
+</div>
 
-    <div class="card">
-        <div class="space-between">
-            <h3 style="margin-top:0;">Experience & Resource Board</h3>
-            <a class="btn" href="{{ url_for('student.knowledge_board') }}">View All</a>
-        </div>
-        {% for post in posts %}
-            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-                <strong>{{ post.title }}</strong>
-                <div style="color:var(--muted);">{{ post.author.full_name }} • {{ 'Resource' if post.author.role == 'faculty' else 'Experience' }} • {{ post.created_at.strftime('%d %b %Y') }}</div>
+<div class="card" style="margin-top:14px;">
+    <div class="space-between" style="margin-bottom:12px;">
+        <h3 style="margin:0;">Experience & Resource Board</h3>
+        <a class="btn" href="{{ url_for('student.knowledge_board') }}">View All</a>
+    </div>
+    <div class="grid-2">
+        {% for post in posts[:6] %}
+            <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--surface-strong);">
+                <div class="space-between" style="align-items:flex-start; gap:8px;">
+                    <strong>{{ post.title }}</strong>
+                    <span class="badge {{ 'approved' if post.author.role == 'faculty' else 'under_review' }}">{{ 'Resource' if post.author.role == 'faculty' else 'Experience' }}</span>
+                </div>
+                <div style="color:var(--muted); margin-top:6px;">{{ post.author.full_name }} • {{ post.created_at.strftime('%d %b %Y') }}</div>
             </div>
         {% else %}
             <p>No posts yet.</p>

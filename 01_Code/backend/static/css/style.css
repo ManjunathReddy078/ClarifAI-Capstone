@@ -321,9 +321,86 @@ textarea {
     min-height: 320px;
 }
 
+.chart-subtitle {
+    margin: -4px 0 10px;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
 .chart-card canvas {
     width: 100% !important;
     height: 240px !important;
+}
+
+.student-hero-card {
+    border: 1px solid var(--border);
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.16), rgba(6, 182, 212, 0.08));
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.student-hero-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.student-hero-sub {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
+.student-hero-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.student-pulse-banner {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: rgba(99, 102, 241, 0.08);
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.student-pulse-main {
+    margin: 0;
+    font-weight: 600;
+}
+
+.student-pulse-sub {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.modern-stat h3 {
+    margin: 8px 0 4px;
+    font-size: 1.45rem;
+}
+
+.modern-stat p,
+.modern-stat small {
+    color: var(--muted);
+}
+
+.modern-stat-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modern-stat-icon {
+    color: var(--accent);
 }
 
 .home-hero {
@@ -608,5 +685,11 @@ textarea {
 
     .landing-footer {
         grid-template-columns: 1fr;
+    }
+
+    .student-hero-card,
+    .student-pulse-banner {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
