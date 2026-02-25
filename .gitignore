@@ -1,11 +1,14 @@
-venv/
-__pycache__/
-*.db
-*.csv
-*.md
-02_Diagrams/
-03_Presentations/
-04_Report/
-05_Research_Paper/
+01_Code/backend/venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.log
+~$*
+.DS_Store
+
+# local runtime database and whitelist should not be committed
+01_Code/database/clarifai.db
+01_Code/backend/data/whitelist.csv
+
+# optional local backup snapshots
 06_Backups/
-07_Literature Survey/
