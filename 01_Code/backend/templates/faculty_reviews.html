@@ -2,37 +2,10 @@
 {% block title %}Faculty Feedback Insights | ClarifAI{% endblock %}
 {% block page_title %}Feedback Insights{% endblock %}
 {% block content %}
-<div class="grid-4" style="margin-bottom:14px;">
-    <div class="card">
-        <small style="color:var(--muted);">Total Approved</small>
-        <h3 style="margin:6px 0 0;">{{ kpi.total }}</h3>
-    </div>
-    <div class="card">
-        <small style="color:var(--muted);">Positive</small>
-        <h3 style="margin:6px 0 0;">{{ kpi.positive }}</h3>
-    </div>
-    <div class="card">
-        <small style="color:var(--muted);">Neutral</small>
-        <h3 style="margin:6px 0 0;">{{ kpi.neutral }}</h3>
-    </div>
-    <div class="card">
-        <small style="color:var(--muted);">Negative</small>
-        <h3 style="margin:6px 0 0;">{{ kpi.negative }}</h3>
-    </div>
-</div>
-
-<div class="grid-3" style="margin-bottom:14px;">
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Sentiment Split</h3>
-        <canvas id="facultySentimentPie"></canvas>
-    </div>
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Top Feedback Reasons</h3>
-        <canvas id="facultyReasonBar"></canvas>
-    </div>
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Monthly Sentiment Trend</h3>
-        <canvas id="facultyTrendLine"></canvas>
+<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
+    <div>
+        <h3 style="margin:0;">Feedback Insights</h3>
+        <p class="chart-subtitle">Analyze approved feedback trends, reasons, and sentiment signals</p>
     </div>
 </div>
 
@@ -56,6 +29,31 @@
             <a class="btn" href="{{ url_for('faculty.reviews') }}">Reset</a>
         </div>
     </form>
+</div>
+
+<div class="grid-4" style="margin-bottom:14px;">
+    <div class="card modern-stat"><small>Total Approved</small><h3>{{ kpi.total }}</h3></div>
+    <div class="card modern-stat"><small>Positive</small><h3>{{ kpi.positive }}</h3></div>
+    <div class="card modern-stat"><small>Neutral</small><h3>{{ kpi.neutral }}</h3></div>
+    <div class="card modern-stat"><small>Negative</small><h3>{{ kpi.negative }}</h3></div>
+</div>
+
+<div class="grid-3" style="margin-bottom:14px;">
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Sentiment Split</h3>
+        <p class="chart-subtitle">Distribution across approved entries</p>
+        <canvas id="facultySentimentPie"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Top Feedback Reasons</h3>
+        <p class="chart-subtitle">Most frequent issue categories</p>
+        <canvas id="facultyReasonBar"></canvas>
+    </div>
+    <div class="card chart-card">
+        <h3 style="margin-top:0;">Monthly Sentiment Trend</h3>
+        <p class="chart-subtitle">Positive vs negative movement</p>
+        <canvas id="facultyTrendLine"></canvas>
+    </div>
 </div>
 
 <div class="card">

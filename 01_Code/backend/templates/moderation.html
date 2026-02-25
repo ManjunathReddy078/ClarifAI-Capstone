@@ -2,6 +2,13 @@
 {% block title %}Moderation | ClarifAI{% endblock %}
 {% block page_title %}Moderation Queue{% endblock %}
 {% block content %}
+<div class="grid-4" style="margin-bottom:14px;">
+    <div class="card modern-stat"><small>Total Queue</small><h3>{{ kpi.total }}</h3></div>
+    <div class="card modern-stat"><small>Positive</small><h3>{{ kpi.positive }}</h3></div>
+    <div class="card modern-stat"><small>Neutral</small><h3>{{ kpi.neutral }}</h3></div>
+    <div class="card modern-stat"><small>Negative</small><h3>{{ kpi.negative }}</h3></div>
+</div>
+
 <div class="card" style="margin-bottom:14px;">
     <form method="get" class="grid-3" style="align-items:end;">
         <div>
@@ -35,20 +42,23 @@
 
 <div class="card">
     {% for item in pending_feedback %}
-        <div class="card" style="margin-bottom:10px;">
-            <div style="margin-bottom:8px;">
-                <strong>For Faculty:</strong> {{ item.faculty.full_name }}
-                <div style="color:var(--muted);">Subject: {{ item.subject }} • Semester: {{ item.semester }} • Reason: {{ item.reason }}</div>
+        <div class="card" style="margin-bottom:10px; background:#161b22; border-color:#30363d;">
+            <div class="space-between" style="margin-bottom:8px; align-items:flex-start; gap:8px;">
+                <div>
+                    <strong>{{ item.subject }}</strong>
+                    <div style="color:var(--muted);">{{ item.reason }} • {{ item.semester }} • {{ item.faculty.full_name }}</div>
+                </div>
+                <span class="badge under_review">{{ item.sentiment|title }}</span>
             </div>
-            <p style="margin-top:0;">{{ item.feedback_text }}</p>
+            <p style="margin-top:0; color:var(--muted);">{{ item.feedback_text }}</p>
             <form method="post" action="{{ url_for('admin.moderate', feedback_id=item.id) }}">
                 <input type="hidden" name="next_url" value="{{ request.full_path if request.query_string else request.path }}">
                 <label class="label">Admin Note (optional)</label>
                 <textarea name="note"></textarea>
                 <div class="flex" style="margin-top:10px;">
                     <button class="btn success" name="action" value="approve" type="submit">Approve</button>
-                    <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
                     <button class="btn warning" name="action" value="request_edit" type="submit">Request Edit</button>
+                    <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
                 </div>
             </form>
         </div>

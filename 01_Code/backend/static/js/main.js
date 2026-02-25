@@ -49,4 +49,47 @@ document.addEventListener('DOMContentLoaded', () => {
             button.textContent = show ? 'Hide' : 'Peek';
         });
     });
+
+    const sidebar = document.getElementById('appSidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+
+    const closeSidebar = () => {
+        if (!sidebar || !sidebarOverlay) {
+            return;
+        }
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('show');
+    };
+
+    const openSidebar = () => {
+        if (!sidebar || !sidebarOverlay) {
+            return;
+        }
+        sidebar.classList.add('open');
+        sidebarOverlay.classList.add('show');
+    };
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', () => {
+            if (!sidebar || !sidebarOverlay) {
+                return;
+            }
+            const isOpen = sidebar.classList.contains('open');
+            if (isOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', closeSidebar);
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
 });

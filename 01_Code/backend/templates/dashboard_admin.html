@@ -2,64 +2,62 @@
 {% block title %}Admin Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Admin Dashboard{% endblock %}
 {% block content %}
+<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
+    <div>
+        <h3 style="margin:0;">Admin Governance Dashboard</h3>
+        <p class="chart-subtitle">Moderation governance, user management, and policy compliance</p>
+    </div>
+    <div class="student-hero-actions">
+        <a class="btn" href="{{ url_for('admin.moderation_page') }}">Moderation Queue</a>
+        <a class="btn primary" href="{{ url_for('admin.users') }}">User Management</a>
+    </div>
+</div>
+
+<div class="grid-4" style="margin-bottom:14px;">
+    <div class="card modern-stat"><small>Moderation Queue</small><h3>{{ pending_feedback|length }}</h3></div>
+    <div class="card modern-stat"><small>Total Users</small><h3>{{ user_counts.students + user_counts.faculty + user_counts.admins }}</h3></div>
+    <div class="card modern-stat"><small>Active Accounts</small><h3>{{ user_counts.active }}</h3></div>
+    <div class="card modern-stat"><small>Audit Logs</small><h3>{{ moderation_logs|length }}</h3></div>
+</div>
+
 <div class="grid-3" style="margin-bottom:14px;">
-    <div class="card">
-        <small style="color:var(--muted);">Students</small>
-        <h3 style="margin:6px 0 0;">{{ user_counts.students }}</h3>
-    </div>
-    <div class="card">
-        <small style="color:var(--muted);">Faculty</small>
-        <h3 style="margin:6px 0 0;">{{ user_counts.faculty }}</h3>
-    </div>
-    <div class="card">
-        <small style="color:var(--muted);">Active Accounts</small>
-        <h3 style="margin:6px 0 0;">{{ user_counts.active }}</h3>
-    </div>
-</div>
-
-<div class="card" style="margin-bottom:14px;">
-    <div class="space-between">
-        <h3 style="margin:0;">Recent Registrations</h3>
-        <div class="flex">
-            <a class="btn" href="{{ url_for('admin.moderation_page') }}">Open Moderation Console</a>
-            <a class="btn" href="{{ url_for('admin.users') }}">Open User Management</a>
+    <div class="card" style="grid-column: span 2;">
+        <div class="space-between" style="margin-bottom:10px;">
+            <h3 style="margin:0;">Pending Moderation</h3>
+            <a class="btn" href="{{ url_for('admin.moderation_page') }}">Review All</a>
         </div>
-    </div>
-    {% for user in recent_users %}
-        <div style="border-bottom:1px solid var(--border); padding:8px 0;">
-            <strong>{{ user.full_name }}</strong>
-            <div style="color:var(--muted);">{{ user.email }} • {{ user.role|title }} • {{ 'Active' if user.is_active else 'Inactive' }}</div>
-        </div>
-    {% else %}
-        <p>No users found.</p>
-    {% endfor %}
-</div>
-
-<div class="grid-2" style="margin-bottom:14px;">
-    <div class="card">
-        <h3 style="margin-top:0;">Moderation Queue</h3>
-        {% for item in pending_feedback %}
-            <div class="card" style="margin-bottom:10px;">
-                <div style="margin-bottom:8px;">
-                    <strong>For Faculty:</strong> {{ item.faculty.full_name }}
-                    <div style="color:var(--muted);">Student identity hidden at faculty view stage.</div>
-                </div>
-                <p style="margin-top:0;">{{ item.feedback_text }}</p>
-                <form method="post" action="{{ url_for('admin.moderate', feedback_id=item.id) }}">
-                    <label class="label">Admin Note (optional)</label>
-                    <textarea name="note"></textarea>
-                    <div class="flex" style="margin-top:10px;">
-                        <button class="btn success" name="action" value="approve" type="submit">Approve</button>
-                        <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
-                        <button class="btn warning" name="action" value="request_edit" type="submit">Request Edit</button>
+        {% for item in pending_feedback[:4] %}
+            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+                <div class="space-between" style="align-items:flex-start; gap:10px;">
+                    <div>
+                        <strong>{{ item.subject }}</strong>
+                        <div style="color:var(--muted);">{{ item.reason }} · {{ item.semester }}</div>
+                        <p style="margin:6px 0 0; color:var(--muted);">{{ item.feedback_text[:140] }}{% if item.feedback_text|length > 140 %}...{% endif %}</p>
                     </div>
-                </form>
+                    <span class="badge under_review">{{ item.sentiment|title }}</span>
+                </div>
             </div>
         {% else %}
             <p>No under-review feedback in queue.</p>
         {% endfor %}
     </div>
 
+    <div class="card">
+        <h3 style="margin-top:0;">Users by Role</h3>
+        <canvas id="adminRoleChart" style="height:210px;"></canvas>
+        <div style="margin-top:10px; color:var(--muted); font-size:.85rem;">
+            Students: {{ user_counts.students }} · Faculty: {{ user_counts.faculty }} · Admins: {{ user_counts.admins }}
+        </div>
+    </div>
+</div>
+
+<div class="card chart-card" style="margin-bottom:14px;">
+    <h3 style="margin-top:0;">Department Feedback Volume Trend</h3>
+    <p class="chart-subtitle">Monthly submission counts by sentiment category</p>
+    <canvas id="adminTrendChart"></canvas>
+</div>
+
+<div class="grid-2" style="margin-bottom:14px;">
     <div class="card">
         <h3 style="margin-top:0;">Manual Password Reset</h3>
         <form method="post" action="{{ url_for('admin.manual_reset_password') }}">
@@ -73,17 +71,83 @@
                 <button class="btn primary" type="submit">Reset Password</button>
             </div>
         </form>
+    </div>
 
-        <h3>Recent Logs</h3>
-        {% for log in moderation_logs %}
+    <div class="card">
+        <h3 style="margin-top:0;">Recent Audit Actions</h3>
+        {% for log in moderation_logs[:8] %}
             <div style="border-bottom:1px solid var(--border); padding:8px 0;">
                 <strong>{{ log.action.replace('_', ' ')|title }}</strong>
                 <div style="color:var(--muted);">By {{ log.admin.full_name }} on {{ log.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
-                {% if log.note %}<div>{{ log.note }}</div>{% endif %}
+                {% if log.note %}<div style="color:var(--muted);">{{ log.note }}</div>{% endif %}
             </div>
         {% else %}
             <p>No moderation logs yet.</p>
         {% endfor %}
     </div>
 </div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent Registrations</h3>
+    {% for user in recent_users %}
+        <div style="border-bottom:1px solid var(--border); padding:8px 0;" class="space-between">
+            <div>
+                <strong>{{ user.full_name }}</strong>
+                <div style="color:var(--muted);">{{ user.email }} · {{ user.role|title }}</div>
+            </div>
+            <span class="badge {{ 'approved' if user.is_active else 'rejected' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+        </div>
+    {% else %}
+        <p>No users found.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+    const payload = {{ chart_payload | tojson }};
+    const css = getComputedStyle(document.documentElement);
+    const textColor = css.getPropertyValue('--text').trim();
+    const gridColor = css.getPropertyValue('--border').trim();
+
+    new Chart(document.getElementById('adminRoleChart'), {
+        type: 'doughnut',
+        data: {
+            labels: payload.role_labels,
+            datasets: [{
+                data: payload.role_counts,
+                backgroundColor: ['#6366f1', '#06b6d4', '#a855f7']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } }
+        }
+    });
+
+    new Chart(document.getElementById('adminTrendChart'), {
+        type: 'bar',
+        data: {
+            labels: payload.trend_labels,
+            datasets: [
+                { label: 'Positive', data: payload.trend_positive, backgroundColor: '#34d399' },
+                { label: 'Neutral', data: payload.trend_neutral, backgroundColor: '#fbbf24' },
+                { label: 'Negative', data: payload.trend_negative, backgroundColor: '#fb7185' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}

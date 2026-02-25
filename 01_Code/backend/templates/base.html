@@ -40,54 +40,83 @@
         </div>
     </main>
 {% else %}
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="brand">ClarifAI MCA</div>
-            <div class="nav-links">
-                {% if session.get('role') == 'student' %}
-                    <a href="{{ url_for('student.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-                    <a href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Reviews</a>
-                    <a href="{{ url_for('student.my_checklists') }}"><i data-lucide="list-checks"></i> My Checklists</a>
-                    <a href="{{ url_for('student.knowledge_board') }}"><i data-lucide="book-open"></i> Experience & Resources</a>
-                    <a href="{{ url_for('student.my_knowledge_posts') }}"><i data-lucide="square-stack"></i> My Experiences</a>
-                    <a href="{{ url_for('student.knowledge_post') }}"><i data-lucide="square-pen"></i> Share Experience</a>
-                {% elif session.get('role') == 'faculty' %}
-                    <a href="{{ url_for('faculty.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-                    <a href="{{ url_for('faculty.reviews') }}"><i data-lucide="message-square-text"></i> Feedback Insights</a>
-                    <a href="{{ url_for('faculty.checklists_page') }}"><i data-lucide="list-checks"></i> Manage Checklists</a>
-                    <a href="{{ url_for('faculty.resource_board') }}"><i data-lucide="book-open"></i> Experience & Resources</a>
-                    <a href="{{ url_for('faculty.my_resources') }}"><i data-lucide="folder-open"></i> My Resources</a>
-                    <a href="{{ url_for('faculty.resource_post') }}"><i data-lucide="square-pen"></i> Share Resource</a>
-                {% elif session.get('role') == 'admin' %}
-                    <a href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-                    <a href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation</a>
-                    <a href="{{ url_for('admin.users') }}"><i data-lucide="users"></i> User Management</a>
-                {% endif %}
-                <a href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Logout</a>
+    <div class="dashboard-shell">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="app-sidebar" id="appSidebar">
+            <div class="app-brand-row">
+                <div class="app-brand">
+                    <div class="app-brand-icon"><i data-lucide="brain"></i></div>
+                    <div>
+                        <div class="app-brand-title">ClarifAI</div>
+                        <div class="app-brand-sub">Academic Feedback Intelligence</div>
+                    </div>
+                </div>
+                <button class="icon-btn only-mobile" id="sidebarClose"><i data-lucide="x"></i></button>
+            </div>
+
+            <div class="app-user-card">
+                <div class="app-user-avatar">{{ (session.get('full_name') or 'U')[:1]|upper }}</div>
+                <div>
+                    <div class="app-user-name">{{ session.get('full_name') or 'User' }}</div>
+                    <div class="app-user-role">{{ session.get('role', 'user')|title }}</div>
+                </div>
+            </div>
+
+            <div class="app-nav-block">
+                <div class="app-nav-label">Navigation</div>
+                <div class="nav-links">
+                    {% if session.get('role') == 'student' %}
+                        <a class="{{ 'active' if request.endpoint == 'student.dashboard' else '' }}" href="{{ url_for('student.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.reviews', 'student.edit_review'] else '' }}" href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Reviews</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.my_checklists'] else '' }}" href="{{ url_for('student.my_checklists') }}"><i data-lucide="check-square"></i> My Checklists</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.knowledge_board', 'student.my_knowledge_posts', 'student.knowledge_post', 'student.edit_knowledge_post'] else '' }}" href="{{ url_for('student.knowledge_board') }}"><i data-lucide="book-open"></i> Experience & Resources</a>
+                    {% elif session.get('role') == 'faculty' %}
+                        <a class="{{ 'active' if request.endpoint == 'faculty.dashboard' else '' }}" href="{{ url_for('faculty.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                        <a class="{{ 'active' if request.endpoint == 'faculty.reviews' else '' }}" href="{{ url_for('faculty.reviews') }}"><i data-lucide="bar-chart-3"></i> Feedback Insights</a>
+                        <a class="{{ 'active' if request.endpoint in ['faculty.checklists_page', 'faculty.edit_checklist'] else '' }}" href="{{ url_for('faculty.checklists_page') }}"><i data-lucide="clipboard-list"></i> Checklist Manager</a>
+                        <a class="{{ 'active' if request.endpoint in ['faculty.resource_board', 'faculty.my_resources', 'faculty.resource_post', 'faculty.edit_resource_post'] else '' }}" href="{{ url_for('faculty.resource_board') }}"><i data-lucide="book-open"></i> Resources</a>
+                    {% elif session.get('role') == 'admin' %}
+                        <a class="{{ 'active' if request.endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.moderation_page' else '' }}" href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation Queue</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.users' else '' }}" href="{{ url_for('admin.users') }}"><i data-lucide="users"></i> User Management</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="app-nav-block app-nav-footer">
+                <div class="app-nav-label">Account</div>
+                <div class="nav-links">
+                    <a href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Logout</a>
+                </div>
             </div>
         </aside>
 
-        <main class="main-wrap">
-            <div class="topbar">
+        <div class="app-main-wrap">
+            <header class="app-topbar">
+                <button class="icon-btn" id="sidebarToggle"><i data-lucide="menu"></i></button>
                 <div>
-                    <h2 style="margin: 0;">{% block page_title %}Dashboard{% endblock %}</h2>
+                    <h2 style="margin:0;">{% block page_title %}Dashboard{% endblock %}</h2>
                     <small style="color: var(--muted);">MCA Department Feedback & Knowledge System</small>
                 </div>
-                <button class="btn" id="themeToggle"><i data-lucide="moon"></i> Theme</button>
-            </div>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-wrap">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
+                <div class="app-topbar-actions">
+                    <button class="btn" id="themeToggle"><i data-lucide="moon"></i> Theme</button>
                 </div>
-                {% endif %}
-            {% endwith %}
+            </header>
 
-            {{ content_block }}
-        </main>
+            <main class="main-wrap">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="flash-wrap">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+
+                {{ content_block }}
+            </main>
+        </div>
     </div>
 {% endif %}
 

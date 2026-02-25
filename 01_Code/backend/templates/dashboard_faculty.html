@@ -2,35 +2,55 @@
 {% block title %}Faculty Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Faculty Dashboard{% endblock %}
 {% block content %}
+<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
+    <div>
+        <h3 style="margin:0;">Faculty Dashboard</h3>
+        <p class="chart-subtitle">{{ faculty.full_name }} · Guided review and intervention workspace</p>
+    </div>
+    <div class="student-hero-actions">
+        <a class="btn" href="{{ url_for('faculty.reviews') }}"><i data-lucide="bar-chart-3"></i> View Full Insights</a>
+        <a class="btn primary" href="{{ url_for('faculty.resource_post') }}"><i data-lucide="square-pen"></i> Share Resource</a>
+    </div>
+</div>
+
+<div class="grid-4" style="margin-bottom:14px;">
+    <div class="card modern-stat">
+        <div class="modern-stat-head"><small>Approved Feedback</small><i data-lucide="message-square" class="modern-stat-icon"></i></div>
+        <h3>{{ approved_feedback|length }}</h3>
+        <p>Published this semester</p>
+    </div>
+    <div class="card modern-stat">
+        <div class="modern-stat-head"><small>Total Checklists</small><i data-lucide="check-square" class="modern-stat-icon"></i></div>
+        <h3>{{ checklists|length }}</h3>
+        <p>Assigned to students</p>
+    </div>
+    <div class="card modern-stat">
+        <div class="modern-stat-head"><small>Pending</small><i data-lucide="clock-3" class="modern-stat-icon"></i></div>
+        <h3>{{ pending_count }}</h3>
+        <p>Awaiting completion</p>
+    </div>
+    <div class="card modern-stat">
+        <div class="modern-stat-head"><small>Resources Shared</small><i data-lucide="book-open" class="modern-stat-icon"></i></div>
+        <h3>{{ total_resources }}</h3>
+        <p>This semester</p>
+    </div>
+</div>
+
 <div class="grid-3" style="margin-bottom:14px;">
-    <div class="card">
-        <small style="color:var(--muted);">Total Checklists</small>
-        <h3 style="margin:6px 0 0;">{{ checklists|length }}</h3>
+    <div class="card chart-card" style="grid-column: span 2;">
+        <h3 style="margin-top:0;">Execution Overview</h3>
+        <p class="chart-subtitle">Checklist completion and resource-sharing activity</p>
+        <canvas id="facultyExecutionChart"></canvas>
     </div>
     <div class="card">
-        <small style="color:var(--muted);">Completed</small>
-        <h3 style="margin:6px 0 0;">{{ completed_count }}</h3>
+        <h3 style="margin-top:0;">Quick Actions</h3>
+        <div class="flex" style="flex-direction:column; align-items:stretch; gap:8px;">
+            <a class="btn" href="{{ url_for('faculty.reviews') }}">Feedback Insights</a>
+            <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Checklist Manager</a>
+            <a class="btn" href="{{ url_for('faculty.my_resources') }}">My Resources</a>
+            <a class="btn primary" href="{{ url_for('faculty.resource_post') }}">Share Resource</a>
+        </div>
     </div>
-    <div class="card">
-        <small style="color:var(--muted);">Pending</small>
-        <h3 style="margin:6px 0 0;">{{ pending_count }}</h3>
-    </div>
-    <div class="card">
-        <small style="color:var(--muted);">Resources Shared</small>
-        <h3 style="margin:6px 0 0;">{{ total_resources }}</h3>
-    </div>
-</div>
-
-<div class="card chart-card" style="margin-bottom:14px;">
-    <h3 style="margin-top:0;">Execution Overview</h3>
-    <canvas id="facultyExecutionChart"></canvas>
-</div>
-
-<div class="flex" style="margin-bottom:12px;">
-    <a class="btn" href="{{ url_for('faculty.reviews') }}">Feedback Insights</a>
-    <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Manage Checklists</a>
-    <a class="btn" href="{{ url_for('faculty.my_resources') }}">My Resources</a>
-    <a class="btn primary" href="{{ url_for('faculty.resource_post') }}">Share Resource</a>
 </div>
 
 <div class="grid-2">
@@ -54,13 +74,13 @@
 
     <div class="card">
         <h3 style="margin-top:0;">Checklist Progress</h3>
-        {% for item in checklists %}
+        {% for item in checklists[:6] %}
             <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-                <strong>{{ item.title }}</strong>
+                <div class="space-between" style="gap:8px;">
+                    <strong>{{ item.title }}</strong>
+                    <span class="badge {{ 'approved' if item.is_completed else 'under_review' }}">{{ 'Completed' if item.is_completed else 'Pending' }}</span>
+                </div>
                 <div style="color:var(--muted);">{{ item.student.full_name }} ({{ item.student.email }})</div>
-                <span class="badge {{ 'approved' if item.is_completed else 'under_review' }}">
-                    {{ 'Completed' if item.is_completed else 'Pending' }}
-                </span>
             </div>
         {% else %}
             <p>No checklist records yet.</p>
@@ -68,42 +88,34 @@
     </div>
 </div>
 
-<div class="card" style="margin-top:14px;">
-    <h3 style="margin-top:0;">Recent Resources</h3>
-    {% for post in recent_resources %}
-        <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-            <strong>{{ post.title }}</strong>
-            <div style="color:var(--muted);">{{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
-        </div>
-    {% else %}
-        <p>No resources shared yet.</p>
-    {% endfor %}
-</div>
-
-<div class="card" style="margin-top:14px;">
-    <h3 style="margin-top:0;">Approved Feedback (Identity Hidden)</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Feedback</th>
-                <th>Sentiment</th>
-                <th>Status</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for item in approved_feedback %}
-            <tr>
-                <td>{{ item.feedback_text }}</td>
-                <td>{{ item.sentiment|title }}</td>
-                <td><span class="badge approved">Approved</span></td>
-                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
-            </tr>
+<div class="grid-2" style="margin-top:14px;">
+    <div class="card">
+        <h3 style="margin-top:0;">Recent Resources</h3>
+        {% for post in recent_resources %}
+            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+                <strong>{{ post.title }}</strong>
+                <div style="color:var(--muted);">{{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
+            </div>
         {% else %}
-            <tr><td colspan="4">No approved feedback available.</td></tr>
+            <p>No resources shared yet.</p>
         {% endfor %}
-        </tbody>
-    </table>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">Recent Approved Feedback</h3>
+        {% for item in approved_feedback[:4] %}
+            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+                <div class="space-between" style="gap:8px;">
+                    <strong>{{ item.subject }}</strong>
+                    <span class="badge approved">{{ item.sentiment|title }}</span>
+                </div>
+                <div style="color:var(--muted);">{{ item.reason }} · {{ item.created_at.strftime('%d %b %Y') }}</div>
+                <p style="margin:6px 0 0; color:var(--muted);">{{ item.feedback_text[:120] }}{% if item.feedback_text|length > 120 %}...{% endif %}</p>
+            </div>
+        {% else %}
+            <p>No approved feedback available.</p>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
 

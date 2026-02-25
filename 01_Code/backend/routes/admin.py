@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
 
@@ -8,6 +10,23 @@ from routes.auth import login_required, role_required
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
+def _last_n_month_labels(count: int = 6):
+	labels = []
+	now = datetime.utcnow()
+	year = now.year
+	month = now.month
+
+	for _ in range(count):
+		labels.append((year, month))
+		month -= 1
+		if month == 0:
+			month = 12
+			year -= 1
+
+	labels.reverse()
+	return labels
+
+
 @admin_bp.route("/dashboard")
 @login_required
 @role_required("admin")
@@ -15,6 +34,7 @@ def dashboard():
 	pending_feedback = (
 		Feedback.query.filter_by(status="under_review").order_by(Feedback.created_at.desc()).all()
 	)
+	all_feedback = Feedback.query.order_by(Feedback.created_at.desc()).all()
 	moderation_logs = ModerationLog.query.order_by(ModerationLog.created_at.desc()).limit(30).all()
 	user_counts = {
 		"students": User.query.filter_by(role="student").count(),
@@ -23,12 +43,38 @@ def dashboard():
 		"active": User.query.filter_by(is_active=True).count(),
 	}
 	recent_users = User.query.order_by(User.created_at.desc()).limit(8).all()
+
+	month_keys = _last_n_month_labels(6)
+	month_labels = [datetime(year=year, month=month, day=1).strftime("%b %Y") for year, month in month_keys]
+	month_positive = {f"{year:04d}-{month:02d}": 0 for year, month in month_keys}
+	month_neutral = {f"{year:04d}-{month:02d}": 0 for year, month in month_keys}
+	month_negative = {f"{year:04d}-{month:02d}": 0 for year, month in month_keys}
+
+	for feedback in all_feedback:
+		key = feedback.created_at.strftime("%Y-%m")
+		if key in month_positive and feedback.sentiment == "positive":
+			month_positive[key] += 1
+		if key in month_neutral and feedback.sentiment == "neutral":
+			month_neutral[key] += 1
+		if key in month_negative and feedback.sentiment == "negative":
+			month_negative[key] += 1
+
+	chart_payload = {
+		"role_labels": ["Students", "Faculty", "Admins"],
+		"role_counts": [user_counts["students"], user_counts["faculty"], user_counts["admins"]],
+		"trend_labels": month_labels,
+		"trend_positive": [month_positive[f"{year:04d}-{month:02d}"] for year, month in month_keys],
+		"trend_neutral": [month_neutral[f"{year:04d}-{month:02d}"] for year, month in month_keys],
+		"trend_negative": [month_negative[f"{year:04d}-{month:02d}"] for year, month in month_keys],
+	}
+
 	return render_template(
 		"dashboard_admin.html",
 		pending_feedback=pending_feedback,
 		moderation_logs=moderation_logs,
 		user_counts=user_counts,
 		recent_users=recent_users,
+		chart_payload=chart_payload,
 	)
 
 
@@ -181,6 +227,12 @@ def moderation_page():
 			query = query.filter(Feedback.faculty_id == selected_faculty.id)
 
 	pending_feedback = query.all()
+	kpi = {
+		"total": len(pending_feedback),
+		"positive": len([item for item in pending_feedback if item.sentiment == "positive"]),
+		"neutral": len([item for item in pending_feedback if item.sentiment == "neutral"]),
+		"negative": len([item for item in pending_feedback if item.sentiment == "negative"]),
+	}
 	return render_template(
 		"moderation.html",
 		pending_feedback=pending_feedback,
@@ -188,4 +240,5 @@ def moderation_page():
 		sentiment=sentiment,
 		faculty=faculty,
 		faculty_list=faculty_list,
+		kpi=kpi,
 	)
