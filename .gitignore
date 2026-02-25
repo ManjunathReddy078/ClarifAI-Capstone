@@ -1,14 +1,18 @@
-01_Code/backend/venv/
-**/__pycache__/
-*.pyc
-*.pyo
-*.log
-~$*
-.DS_Store
+*
+!01_Code/
+!01_Code/**
+!README.md
+!.gitignore
 
-# local runtime database and whitelist should not be committed
+# runtime/cache artifacts inside code tree
+01_Code/backend/venv/
+01_Code/**/__pycache__/
+01_Code/**/*.pyc
+01_Code/**/*.pyo
+01_Code/**/*.log
 01_Code/database/clarifai.db
 01_Code/backend/data/whitelist.csv
 
-# optional local backup snapshots
-06_Backups/
+# editor/system noise
+~$*
+.DS_Store
