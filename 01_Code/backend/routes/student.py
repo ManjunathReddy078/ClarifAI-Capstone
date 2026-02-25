@@ -205,8 +205,23 @@ def delete_review(feedback_id: int):
 @login_required
 @role_required("student")
 def knowledge_board():
-	posts = KnowledgePost.query.order_by(KnowledgePost.created_at.desc()).all()
-	return render_template("knowledge_board.html", posts=posts)
+	posts = (
+		KnowledgePost.query.join(User, KnowledgePost.author_id == User.id)
+		.filter(User.role.in_(["student", "faculty"]))
+		.order_by(KnowledgePost.created_at.desc())
+		.all()
+	)
+	return render_template(
+		"knowledge_board.html",
+		posts=posts,
+		board_page_title="Experience & Resource Board",
+		board_heading="Faculty Resources and Student Experiences",
+		my_posts_url=url_for("student.my_knowledge_posts"),
+		my_posts_label="My Experiences",
+		create_post_url=url_for("student.knowledge_post"),
+		create_post_label="Share Experience",
+		empty_message="No resources or experiences available yet.",
+	)
 
 
 @student_bp.route("/knowledge/my-posts")
@@ -218,7 +233,20 @@ def my_knowledge_posts():
 		.order_by(KnowledgePost.created_at.desc())
 		.all()
 	)
-	return render_template("student_my_posts.html", posts=posts)
+	return render_template(
+		"student_my_posts.html",
+		posts=posts,
+		page_title="My Experiences",
+		heading="My Experiences",
+		board_url=url_for("student.knowledge_board"),
+		board_label="Experience & Resource Board",
+		create_url=url_for("student.knowledge_post"),
+		create_label="Share Experience",
+		empty_message="You have not shared any experiences yet.",
+		item_label="experience",
+		edit_endpoint="student.edit_knowledge_post",
+		delete_endpoint="student.delete_knowledge_post",
+	)
 
 
 @student_bp.route("/knowledge-post", methods=["GET", "POST"])
@@ -231,16 +259,32 @@ def knowledge_post():
 
 		if not title or not content:
 			flash("Title and content are required.", "danger")
-			return render_template("knowledge_post.html")
+			return render_template(
+				"knowledge_post.html",
+				page_title="Share Experience",
+				submit_label="Publish Experience",
+			)
+
+		if len(content) < 20:
+			flash("Please provide at least 20 characters to share a meaningful experience.", "danger")
+			return render_template(
+				"knowledge_post.html",
+				page_title="Share Experience",
+				submit_label="Publish Experience",
+			)
 
 		post = KnowledgePost(title=title, content=content, author_id=session["user_id"])
 		db.session.add(post)
 		db.session.commit()
 
-		flash("Knowledge post shared successfully.", "success")
+		flash("Experience shared successfully.", "success")
 		return redirect(url_for("student.my_knowledge_posts"))
 
-	return render_template("knowledge_post.html")
+	return render_template(
+		"knowledge_post.html",
+		page_title="Share Experience",
+		submit_label="Publish Experience",
+	)
 
 
 @student_bp.route("/knowledge-post/<int:post_id>/edit", methods=["GET", "POST"])
@@ -249,7 +293,7 @@ def knowledge_post():
 def edit_knowledge_post(post_id: int):
 	post = KnowledgePost.query.filter_by(id=post_id, author_id=session["user_id"]).first()
 	if not post:
-		flash("Knowledge post not found.", "danger")
+		flash("Experience post not found.", "danger")
 		return redirect(url_for("student.my_knowledge_posts"))
 
 	if request.method == "POST":
@@ -258,15 +302,27 @@ def edit_knowledge_post(post_id: int):
 
 		if not title or not content:
 			flash("Title and content are required.", "danger")
-			return render_template("student_post_edit.html", post=post)
+			return render_template(
+				"student_post_edit.html",
+				post=post,
+				page_title="Edit Experience",
+				back_url=url_for("student.my_knowledge_posts"),
+				item_label="experience",
+			)
 
 		post.title = title
 		post.content = content
 		db.session.commit()
-		flash("Knowledge post updated successfully.", "success")
+		flash("Experience updated successfully.", "success")
 		return redirect(url_for("student.my_knowledge_posts"))
 
-	return render_template("student_post_edit.html", post=post)
+	return render_template(
+		"student_post_edit.html",
+		post=post,
+		page_title="Edit Experience",
+		back_url=url_for("student.my_knowledge_posts"),
+		item_label="experience",
+	)
 
 
 @student_bp.route("/knowledge-post/<int:post_id>/delete", methods=["POST"])
@@ -275,12 +331,12 @@ def edit_knowledge_post(post_id: int):
 def delete_knowledge_post(post_id: int):
 	post = KnowledgePost.query.filter_by(id=post_id, author_id=session["user_id"]).first()
 	if not post:
-		flash("Knowledge post not found.", "danger")
+		flash("Experience post not found.", "danger")
 		return redirect(url_for("student.my_knowledge_posts"))
 
 	db.session.delete(post)
 	db.session.commit()
-	flash("Knowledge post deleted successfully.", "success")
+	flash("Experience deleted successfully.", "success")
 	return redirect(url_for("student.my_knowledge_posts"))
 
 

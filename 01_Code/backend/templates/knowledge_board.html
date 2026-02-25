@@ -1,24 +1,29 @@
 {% extends 'base.html' %}
-{% block title %}Knowledge Board | ClarifAI{% endblock %}
-{% block page_title %}Knowledge Board{% endblock %}
+{% block title %}{{ board_page_title or 'Knowledge Board' }} | ClarifAI{% endblock %}
+{% block page_title %}{{ board_page_title or 'Knowledge Board' }}{% endblock %}
 {% block content %}
 <div class="space-between" style="margin-bottom:12px;">
-    <h3 style="margin:0;">Community Knowledge Posts</h3>
+    <h3 style="margin:0;">{{ board_heading or 'Community Knowledge Posts' }}</h3>
     <div class="flex">
-        <a class="btn" href="{{ url_for('student.my_knowledge_posts') }}">My Posts</a>
-        <a class="btn primary" href="{{ url_for('student.knowledge_post') }}">New Post</a>
+        <a class="btn" href="{{ my_posts_url }}">{{ my_posts_label or 'My Posts' }}</a>
+        <a class="btn primary" href="{{ create_post_url }}">{{ create_post_label or 'New Post' }}</a>
     </div>
 </div>
 
 <div class="grid-2">
     {% for post in posts %}
         <div class="card">
-            <h3 style="margin-top:0;">{{ post.title }}</h3>
+            <div class="space-between">
+                <h3 style="margin-top:0;">{{ post.title }}</h3>
+                <span class="badge {{ 'approved' if post.author.role == 'faculty' else 'under_review' }}">
+                    {{ 'Resource' if post.author.role == 'faculty' else 'Experience' }}
+                </span>
+            </div>
             <p>{{ post.content }}</p>
             <small style="color:var(--muted);">By {{ post.author.full_name }} on {{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
         </div>
     {% else %}
-        <div class="card"><p>No posts available yet.</p></div>
+        <div class="card"><p>{{ empty_message or 'No posts available yet.' }}</p></div>
     {% endfor %}
 </div>
 {% endblock %}

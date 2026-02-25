@@ -1,7 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
 
-from models import Checklist, Feedback, User, db
+from models import Checklist, Feedback, KnowledgePost, User, db
 from routes.auth import login_required, role_required
 
 
@@ -23,15 +23,162 @@ def dashboard():
 		.order_by(Checklist.created_at.desc())
 		.all()
 	)
+	recent_resources = (
+		KnowledgePost.query.filter_by(author_id=faculty_user.id)
+		.order_by(KnowledgePost.created_at.desc())
+		.limit(5)
+		.all()
+	)
 
 	return render_template(
 		"dashboard_faculty.html",
 		faculty=faculty_user,
 		approved_feedback=approved_feedback,
 		checklists=checklists,
+		recent_resources=recent_resources,
+		total_resources=KnowledgePost.query.filter_by(author_id=faculty_user.id).count(),
 		completed_count=len([item for item in checklists if item.is_completed]),
 		pending_count=len([item for item in checklists if not item.is_completed]),
 	)
+
+
+@faculty_bp.route("/resources/board")
+@login_required
+@role_required("faculty")
+def resource_board():
+	posts = (
+		KnowledgePost.query.join(User, KnowledgePost.author_id == User.id)
+		.filter(User.role.in_(["student", "faculty"]))
+		.order_by(KnowledgePost.created_at.desc())
+		.all()
+	)
+	return render_template(
+		"knowledge_board.html",
+		posts=posts,
+		board_page_title="Experience & Resource Board",
+		board_heading="Faculty Resources and Student Experiences",
+		my_posts_url=url_for("faculty.my_resources"),
+		my_posts_label="My Resources",
+		create_post_url=url_for("faculty.resource_post"),
+		create_post_label="Share Resource",
+		empty_message="No resources or experiences available yet.",
+	)
+
+
+@faculty_bp.route("/resources/my")
+@login_required
+@role_required("faculty")
+def my_resources():
+	posts = (
+		KnowledgePost.query.filter_by(author_id=session["user_id"])
+		.order_by(KnowledgePost.created_at.desc())
+		.all()
+	)
+	return render_template(
+		"student_my_posts.html",
+		posts=posts,
+		page_title="My Resources",
+		heading="My Shared Resources",
+		board_url=url_for("faculty.resource_board"),
+		board_label="Experience & Resource Board",
+		create_url=url_for("faculty.resource_post"),
+		create_label="Share Resource",
+		empty_message="You have not shared any resources yet.",
+		item_label="resource",
+		edit_endpoint="faculty.edit_resource_post",
+		delete_endpoint="faculty.delete_resource_post",
+	)
+
+
+@faculty_bp.route("/resource-post", methods=["GET", "POST"])
+@login_required
+@role_required("faculty")
+def resource_post():
+	if request.method == "POST":
+		title = request.form.get("title", "").strip()
+		content = request.form.get("content", "").strip()
+
+		if not title or not content:
+			flash("Title and content are required.", "danger")
+			return render_template(
+				"knowledge_post.html",
+				page_title="Share Resource",
+				submit_label="Publish Resource",
+			)
+
+		if len(content) < 20:
+			flash("Please provide at least 20 characters to share a meaningful resource.", "danger")
+			return render_template(
+				"knowledge_post.html",
+				page_title="Share Resource",
+				submit_label="Publish Resource",
+			)
+
+		post = KnowledgePost(title=title, content=content, author_id=session["user_id"])
+		db.session.add(post)
+		db.session.commit()
+
+		flash("Resource shared successfully.", "success")
+		return redirect(url_for("faculty.my_resources"))
+
+	return render_template(
+		"knowledge_post.html",
+		page_title="Share Resource",
+		submit_label="Publish Resource",
+	)
+
+
+@faculty_bp.route("/resource-post/<int:post_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("faculty")
+def edit_resource_post(post_id: int):
+	post = KnowledgePost.query.filter_by(id=post_id, author_id=session["user_id"]).first()
+	if not post:
+		flash("Resource post not found.", "danger")
+		return redirect(url_for("faculty.my_resources"))
+
+	if request.method == "POST":
+		title = request.form.get("title", "").strip()
+		content = request.form.get("content", "").strip()
+
+		if not title or not content:
+			flash("Title and content are required.", "danger")
+			return render_template(
+				"student_post_edit.html",
+				post=post,
+				page_title="Edit Resource",
+				back_url=url_for("faculty.my_resources"),
+				item_label="resource",
+			)
+
+		post.title = title
+		post.content = content
+		db.session.commit()
+		flash("Resource updated successfully.", "success")
+		return redirect(url_for("faculty.my_resources"))
+
+	return render_template(
+		"student_post_edit.html",
+		post=post,
+		page_title="Edit Resource",
+		back_url=url_for("faculty.my_resources"),
+		item_label="resource",
+	)
+
+
+@faculty_bp.route("/resource-post/<int:post_id>/delete", methods=["POST"])
+@login_required
+@role_required("faculty")
+def delete_resource_post(post_id: int):
+	post = KnowledgePost.query.filter_by(id=post_id, author_id=session["user_id"]).first()
+	if not post:
+		flash("Resource post not found.", "danger")
+		return redirect(url_for("faculty.my_resources"))
+
+	db.session.delete(post)
+	db.session.commit()
+	flash("Resource deleted successfully.", "success")
+	return redirect(url_for("faculty.my_resources"))
 
 
 @faculty_bp.route("/reviews")

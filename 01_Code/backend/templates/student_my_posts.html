@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
-{% block title %}My Knowledge Posts | ClarifAI{% endblock %}
-{% block page_title %}My Knowledge Posts{% endblock %}
+{% block title %}{{ page_title or 'My Knowledge Posts' }} | ClarifAI{% endblock %}
+{% block page_title %}{{ page_title or 'My Knowledge Posts' }}{% endblock %}
 {% block content %}
 <div class="space-between" style="margin-bottom:12px;">
-    <h3 style="margin:0;">My Posts</h3>
+    <h3 style="margin:0;">{{ heading or 'My Posts' }}</h3>
     <div class="flex">
-        <a class="btn" href="{{ url_for('student.knowledge_board') }}">Community Board</a>
-        <a class="btn primary" href="{{ url_for('student.knowledge_post') }}">New Post</a>
+        <a class="btn" href="{{ board_url }}">{{ board_label or 'Community Board' }}</a>
+        <a class="btn primary" href="{{ create_url }}">{{ create_label or 'New Post' }}</a>
     </div>
 </div>
 
@@ -17,14 +17,14 @@
             <p>{{ post.content }}</p>
             <small style="color:var(--muted);">{{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
             <div class="flex" style="margin-top:12px;">
-                <a class="btn" href="{{ url_for('student.edit_knowledge_post', post_id=post.id) }}">Edit</a>
-                <form method="post" action="{{ url_for('student.delete_knowledge_post', post_id=post.id) }}" onsubmit="return confirm('Delete this post?');">
+                <a class="btn" href="{{ url_for(edit_endpoint, post_id=post.id) }}">Edit</a>
+                <form method="post" action="{{ url_for(delete_endpoint, post_id=post.id) }}" onsubmit="return confirm('Delete this {{ item_label or 'post' }}?');">
                     <button class="btn danger" type="submit">Delete</button>
                 </form>
             </div>
         </div>
     {% else %}
-        <div class="card"><p>You have not shared any posts yet.</p></div>
+        <div class="card"><p>{{ empty_message or 'You have not shared any posts yet.' }}</p></div>
     {% endfor %}
 </div>
 {% endblock %}

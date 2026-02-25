@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}New Knowledge Post | ClarifAI{% endblock %}
-{% block page_title %}Share Knowledge{% endblock %}
+{% block title %}{{ page_title or 'New Knowledge Post' }} | ClarifAI{% endblock %}
+{% block page_title %}{{ page_title or 'Share Knowledge' }}{% endblock %}
 {% block content %}
 <div class="card">
     <form method="post">
@@ -11,7 +11,7 @@
         <textarea name="content" required></textarea>
 
         <div style="margin-top:14px;">
-            <button class="btn primary" type="submit">Publish Post</button>
+            <button class="btn primary" type="submit">{{ submit_label or 'Publish Post' }}</button>
         </div>
     </form>
 </div>

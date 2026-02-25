@@ -71,13 +71,13 @@
 
     <div class="card">
         <div class="space-between">
-            <h3 style="margin-top:0;">Knowledge Board</h3>
+            <h3 style="margin-top:0;">Experience & Resource Board</h3>
             <a class="btn" href="{{ url_for('student.knowledge_board') }}">View All</a>
         </div>
         {% for post in posts %}
             <div style="border-bottom:1px solid var(--border); padding:10px 0;">
                 <strong>{{ post.title }}</strong>
-                <div style="color:var(--muted);">{{ post.author.full_name }} • {{ post.created_at.strftime('%d %b %Y') }}</div>
+                <div style="color:var(--muted);">{{ post.author.full_name }} • {{ 'Resource' if post.author.role == 'faculty' else 'Experience' }} • {{ post.created_at.strftime('%d %b %Y') }}</div>
             </div>
         {% else %}
             <p>No posts yet.</p>

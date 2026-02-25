@@ -15,11 +15,17 @@
         <small style="color:var(--muted);">Pending</small>
         <h3 style="margin:6px 0 0;">{{ pending_count }}</h3>
     </div>
+    <div class="card">
+        <small style="color:var(--muted);">Resources Shared</small>
+        <h3 style="margin:6px 0 0;">{{ total_resources }}</h3>
+    </div>
 </div>
 
 <div class="flex" style="margin-bottom:12px;">
     <a class="btn" href="{{ url_for('faculty.reviews') }}">Feedback Insights</a>
     <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Manage Checklists</a>
+    <a class="btn" href="{{ url_for('faculty.my_resources') }}">My Resources</a>
+    <a class="btn primary" href="{{ url_for('faculty.resource_post') }}">Share Resource</a>
 </div>
 
 <div class="grid-2">
@@ -55,6 +61,18 @@
             <p>No checklist records yet.</p>
         {% endfor %}
     </div>
+</div>
+
+<div class="card" style="margin-top:14px;">
+    <h3 style="margin-top:0;">Recent Resources</h3>
+    {% for post in recent_resources %}
+        <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+            <strong>{{ post.title }}</strong>
+            <div style="color:var(--muted);">{{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
+        </div>
+    {% else %}
+        <p>No resources shared yet.</p>
+    {% endfor %}
 </div>
 
 <div class="card" style="margin-top:14px;">
