@@ -1,0 +1,61 @@
+serial_no,degree,semester,course_code,subject_name,subject_type,is_active
+1,MCA,1,MCA101,Programming Paradigms with C++,CORE,YES
+2,MCA,1,MCA102,Data Structures and Algorithms,CORE,YES
+3,MCA,1,MCA103,Discrete Mathematics and Logic,CORE,YES
+4,MCA,1,MCA104,Operating System Fundamentals,CORE,YES
+5,MCA,1,MCA105,Database Management Systems,CORE,YES
+6,MCA,1,MCA106L,C++ and DSA Lab,LAB,YES
+7,MCA,1,MCA107L,DBMS Lab,LAB,YES
+8,MCA,2,MCA201,Object Oriented Programming with Java,CORE,YES
+9,MCA,2,MCA202,Computer Networks,CORE,YES
+10,MCA,2,MCA203,Advanced Database Systems,CORE,YES
+11,MCA,2,MCA204,Software Engineering Principles,CORE,YES
+12,MCA,2,MCA205,Web Technologies and Design,CORE,YES
+13,MCA,2,MCA206L,Java Programming Lab,LAB,YES
+14,MCA,2,MCA207L,Web Development Lab,LAB,YES
+15,MCA,3,MCA301,Python for Data Science,CORE,YES
+16,MCA,3,MCA302,Cloud Computing and DevOps,CORE,YES
+17,MCA,3,MCA303,Mobile Application Development,CORE,YES
+18,MCA,3,MCA304,Machine Learning Fundamentals,ELECTIVE,YES
+19,MCA,3,MCA305,Software Project Management,CORE,YES
+20,MCA,3,MCA306L,Python and ML Lab,LAB,YES
+21,MCA,3,MCA307L,Mobile Development Lab,LAB,YES
+22,MCA,4,MCA401,Research Methodology and Technical Writing,CORE,YES
+23,MCA,4,MCA402,Cyber Security and Ethical Hacking,ELECTIVE,YES
+24,MCA,4,MCA403P,Major Project,PROJECT,YES
+25,MCA,4,MCA404P,Project Seminar and Viva Voce,PROJECT,YES
+26,BCA,1,BCA101,Fundamentals of C Programming,CORE,YES
+27,BCA,1,BCA102,Digital Logic and Computer Organization,CORE,YES
+28,BCA,1,BCA103,Engineering Mathematics I,CORE,YES
+29,BCA,1,BCA104,English Communication and Soft Skills,CORE,YES
+30,BCA,1,BCA105L,Computer Fundamentals Lab,LAB,YES
+31,BCA,1,BCA106L,C Programming Lab,LAB,YES
+32,BCA,2,BCA201,Data Structures Using C++,CORE,YES
+33,BCA,2,BCA202,Operating Systems,CORE,YES
+34,BCA,2,BCA203,Database Management Systems,CORE,YES
+35,BCA,2,BCA204,Engineering Mathematics II,CORE,YES
+36,BCA,2,BCA205,Statistics and Probability,CORE,YES
+37,BCA,2,BCA206L,DSA and DBMS Lab,LAB,YES
+38,BCA,3,BCA301,Java Programming,CORE,YES
+39,BCA,3,BCA302,Computer Networks,CORE,YES
+40,BCA,3,BCA303,Software Engineering,CORE,YES
+41,BCA,3,BCA304,Web Design and Development,CORE,YES
+42,BCA,3,BCA305,Python Programming Basics,ELECTIVE,YES
+43,BCA,3,BCA306L,Java and Web Lab,LAB,YES
+44,BCA,4,BCA401,Advanced Java and Frameworks,CORE,YES
+45,BCA,4,BCA402,PHP and MySQL Development,CORE,YES
+46,BCA,4,BCA403,Computer Graphics and Visualization,CORE,YES
+47,BCA,4,BCA404,Artificial Intelligence Introduction,CORE,YES
+48,BCA,4,BCA405,Android Application Development,ELECTIVE,YES
+49,BCA,4,BCA406L,Advanced Web Development Lab,LAB,YES
+50,BCA,5,BCA501,Machine Learning and Analytics,CORE,YES
+51,BCA,5,BCA502,Cyber Security Fundamentals,CORE,YES
+52,BCA,5,BCA503,Cloud Computing Technologies,CORE,YES
+53,BCA,5,BCA504,Internet of Things,ELECTIVE,YES
+54,BCA,5,BCA505,Data Analytics and Visualization,CORE,YES
+55,BCA,5,BCA506L,ML and Cloud Lab,LAB,YES
+56,BCA,6,BCA601,Emerging Technologies and Trends,CORE,YES
+57,BCA,6,BCA602,Industry Readiness and Placement Preparation,CORE,YES
+58,BCA,6,BCA603,Research and Project Seminar,CORE,YES
+59,BCA,6,BCA604P,Minor Internship Project,PROJECT,YES
+60,BCA,6,BCA605P,Major Project,PROJECT,YES

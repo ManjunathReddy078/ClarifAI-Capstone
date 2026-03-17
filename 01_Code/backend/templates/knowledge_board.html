@@ -2,28 +2,325 @@
 {% block title %}{{ board_page_title or 'Knowledge Board' }} | ClarifAI{% endblock %}
 {% block page_title %}{{ board_page_title or 'Knowledge Board' }}{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:12px;">
-    <h3 style="margin:0;">{{ board_heading or 'Community Knowledge Posts' }}</h3>
-    <div class="flex">
-        <a class="btn" href="{{ my_posts_url }}">{{ my_posts_label or 'My Posts' }}</a>
-        <a class="btn primary" href="{{ create_post_url }}">{{ create_post_label or 'New Post' }}</a>
+<section class="student-flow-shell">
+    <div class="flow-breadcrumb">{{ board_breadcrumb_primary or 'Student' }} <span>/</span> {{ board_breadcrumb_secondary or 'Knowledge Board' }}</div>
+
+    {% if notification_items %}
+    <div class="card" style="margin-bottom:10px; border-left:4px solid var(--primary);">
+        <h3 style="margin:0 0 8px;">Recent Intervention Updates</h3>
+        {% for note in notification_items %}
+        <p style="margin:6px 0; color:var(--text);">
+            <i data-lucide="bell"></i>
+            {{ note.message }}
+            {% if note.created_at %}
+            <small style="color:var(--muted);">({{ note.created_at|ist_datetime('%d %b %I:%M %p') }})</small>
+            {% endif %}
+        </p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="space-between" style="margin-bottom:10px; align-items:flex-end;">
+        <div>
+            <h2 style="margin:0;">{{ board_heading or 'Knowledge Board' }}</h2>
+            <p class="chart-subtitle">{{ board_subtitle or 'Discover and share structured learning entries from your peers.' }}</p>
+        </div>
+        <div class="flex">
+            {% if my_posts_url %}
+            <a class="btn" href="{{ my_posts_url }}">{{ my_posts_label or 'My Posts' }}</a>
+            {% endif %}
+            {% if session.get('role') == 'faculty' %}
+            <a class="btn primary" href="{{ create_post_url }}"><i data-lucide="plus"></i> {{ create_post_label or 'Create Entry' }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <form class="card board-filter-card" method="get" action="{{ url_for(board_filter_endpoint or 'student.knowledge_board') }}" data-board-filter-form>
+        <div class="board-filter-row">
+            <div class="board-search-wrap">
+                <i data-lucide="search"></i>
+                <input type="text" name="q" value="{{ search }}" placeholder="Search by title or faculty name..." autocomplete="off">
+            </div>
+            <select name="sort" aria-label="Sort entries">
+                <option value="most_upvoted" {{ 'selected' if sort_by == 'most_upvoted' else '' }}>Most Upvoted</option>
+                <option value="oldest" {{ 'selected' if sort_by == 'oldest' else '' }}>Oldest</option>
+                <option value="recent" {{ 'selected' if sort_by == 'recent' else '' }}>Most Recent</option>
+            </select>
+        </div>
+        <div class="board-date-row">
+            <label class="board-date-field" for="boardDateFrom">
+                <span>From date</span>
+                <input id="boardDateFrom" type="date" name="date_from" value="{{ date_from_value or '' }}">
+            </label>
+            <label class="board-date-field" for="boardDateTo">
+                <span>To date</span>
+                <input id="boardDateTo" type="date" name="date_to" value="{{ date_to_value or '' }}">
+            </label>
+        </div>
+        <p class="board-filter-hint">Filters are applied instantly as you type or change values.</p>
+    </form>
+
+    <div class="grid-2" data-board-grid>
+        {% for card in board_cards %}
+            <article
+                class="card board-entry-card"
+                data-intervention-post-id="{{ card.post.id }}"
+                data-metrics-url="{{ url_for(metrics_endpoint) if metrics_endpoint else '' }}"
+                data-board-title="{{ (card.post.title or '')|lower|e }}"
+                data-board-author="{{ (card.post.author.full_name or '')|lower|e }}"
+                data-board-created-date="{{ card.post.created_at.strftime('%Y-%m-%d') if card.post.created_at else '' }}"
+                data-board-timestamp="{{ card.post.created_at.strftime('%Y%m%d%H%M%S') if card.post.created_at else '0' }}"
+                data-board-upvotes="{{ card.likes or 0 }}"
+            >
+                <div class="space-between" style="align-items:flex-start;">
+                    <h3 style="margin-top:0;">{{ card.post.title }}</h3>
+                    {% if detail_endpoint %}
+                    <button
+                        class="icon-btn post-link-trigger"
+                        type="button"
+                        data-open-post-detail
+                        data-post-id="{{ card.post.id }}"
+                        data-detail-url="{{ url_for(detail_endpoint, post_id=card.post.id) }}"
+                        aria-label="Open intervention details"
+                        title="Open intervention details"
+                    >
+                        <i data-lucide="external-link"></i>
+                    </button>
+                    {% endif %}
+                </div>
+                <p>{{ card.post.content[:210] }}{% if card.post.content|length > 210 %}...{% endif %}</p>
+                <div class="board-entry-tags">
+                    {% for tag in card.tags[:4] %}
+                        <span class="tag-pill">{{ tag }}</span>
+                    {% endfor %}
+                    {% if card.tags|length > 4 %}
+                        <span class="tag-pill">+{{ card.tags|length - 4 }} more</span>
+                    {% endif %}
+                </div>
+                {% if card.target_summary %}
+                <div class="board-entry-tags">
+                    <span class="tag-pill">Course: {{ card.target_summary.courses }}</span>
+                    <span class="tag-pill">Semester: {{ card.target_summary.semesters }}</span>
+                    <span class="tag-pill">Section: {{ card.target_summary.sections }}</span>
+                </div>
+                {% endif %}
+                {% if card.attachments %}
+                <div class="board-entry-tags">
+                    {% for attachment in card.attachments %}
+                        <a class="tag-pill" href="{{ url_for('static', filename=attachment.file_path) }}" download>{{ attachment.file_name }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="space-between board-entry-meta">
+                    <div class="board-engagement">
+                        {% if show_reaction_actions %}
+                        <form method="post" action="{{ url_for('student.react_knowledge_post', post_id=card.post.id) }}">
+                            <input type="hidden" name="reaction_type" value="like">
+                            <button class="btn {{ 'primary' if card.liked else '' }}" type="submit"><i data-lucide="thumbs-up"></i> {{ card.likes }}</button>
+                        </form>
+                        <form method="post" action="{{ url_for('student.react_knowledge_post', post_id=card.post.id) }}">
+                            <input type="hidden" name="reaction_type" value="bookmark">
+                            <button class="btn {{ 'primary' if card.bookmarked else '' }}" type="submit"><i data-lucide="bookmark"></i> {{ card.bookmarks }}</button>
+                        </form>
+                        {% else %}
+                        <span><i data-lucide="thumbs-up"></i> <strong data-metric-for="likes">{{ card.likes }}</strong></span>
+                        {% if card.opened_count is defined %}
+                        <span><i data-lucide="eye"></i> Opened <strong data-metric-for="opened">{{ card.opened_count }}</strong></span>
+                        {% endif %}
+                        <span><i data-lucide="bookmark"></i> Saved <strong data-metric-for="saved">{{ card.bookmarks }}</strong></span>
+                        {% if card.reach_count is defined %}
+                        <span><i data-lucide="users"></i> Reach <strong data-metric-for="reach">{{ card.reach_count }}</strong></span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    <small>{{ card.post.author.full_name.split(' ')[0] }} · {{ card.post.created_at|ist_datetime('%d %b %I:%M %p') }}</small>
+                </div>
+            </article>
+        {% else %}
+            <div class="card"><p>{{ empty_message or 'No posts available yet.' }}</p></div>
+        {% endfor %}
+    </div>
+    <div class="card board-filter-empty" id="boardFilterEmptyState" hidden>
+        <p>No entries match your current search, date range, and sort selection.</p>
+    </div>
+</section>
+
+{% if detail_endpoint %}
+<div class="modal intervention-detail-modal" id="interventionDetailModal" aria-hidden="true">
+    <div class="modal-card intervention-detail-card">
+        <div class="space-between" style="align-items:flex-start;">
+            <div>
+                <h3 id="interventionDetailTitle" style="margin:0;">Intervention Details</h3>
+                <p id="interventionDetailMeta" class="chart-subtitle" style="margin:4px 0 0;">Loading...</p>
+            </div>
+            <button class="btn" type="button" data-close-modal aria-label="Close details">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <div class="intervention-detail-target" id="interventionDetailTarget"></div>
+
+        <div class="intervention-detail-metrics" id="interventionDetailMetrics">
+            <span><i data-lucide="users"></i> Reach <strong id="detailMetricReach">0</strong></span>
+            <span><i data-lucide="eye"></i> Opened <strong id="detailMetricOpened">0</strong></span>
+            <span><i data-lucide="thumbs-up"></i> <strong id="detailMetricLikes">0</strong></span>
+            <span><i data-lucide="bookmark"></i> Saved <strong id="detailMetricSaved">0</strong></span>
+        </div>
+
+        <div class="intervention-detail-section">
+            <h4>Content</h4>
+            <p id="interventionDetailContent" style="white-space:pre-wrap;"></p>
+        </div>
+
+        <div class="intervention-detail-section" id="detailProblemWrap" hidden>
+            <h4>Problem Context</h4>
+            <p id="interventionDetailProblem" style="white-space:pre-wrap;"></p>
+        </div>
+
+        <div class="intervention-detail-section" id="detailSolutionWrap" hidden>
+            <h4>Solution Steps</h4>
+            <p id="interventionDetailSolution" style="white-space:pre-wrap;"></p>
+        </div>
+
+        <div class="intervention-detail-section" id="detailReferencesWrap" hidden>
+            <h4>References</h4>
+            <p id="interventionDetailReferences" style="white-space:pre-wrap;"></p>
+        </div>
+
+        <div class="intervention-detail-section" id="detailOutcomeWrap" hidden>
+            <h4>Outcome</h4>
+            <p id="interventionDetailOutcome" style="white-space:pre-wrap;"></p>
+        </div>
+
+        <div class="intervention-detail-section" id="detailLinksWrap" hidden>
+            <h4>External Links</h4>
+            <div class="intervention-detail-links" id="interventionDetailLinks"></div>
+        </div>
+
+        <div class="intervention-detail-section">
+            <h4>Resources & Attachments</h4>
+            <div id="interventionDetailAttachments" class="intervention-detail-attachments"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if enable_compose_modal %}
+<div class="modal knowledge-entry-modal {{ 'active' if open_compose else '' }}" id="knowledgeEntryModal">
+    <div class="modal-card knowledge-entry-card" data-knowledge-wizard>
+        <div class="space-between">
+            <div>
+                <h3 style="margin:0;">Create Knowledge Entry</h3>
+                <p class="chart-subtitle" id="wizardStepLabel">Step 1 of 4</p>
+            </div>
+            <button class="btn" type="button" data-close-modal><i data-lucide="x"></i></button>
+        </div>
+
+        <div class="wizard-track" aria-hidden="true">
+            <span class="wizard-node active">1</span>
+            <span class="wizard-line"></span>
+            <span class="wizard-node">2</span>
+            <span class="wizard-line"></span>
+            <span class="wizard-node">3</span>
+            <span class="wizard-line"></span>
+            <span class="wizard-node">4</span>
+        </div>
+
+        <form method="post" action="{{ url_for('student.knowledge_post') }}" id="knowledgeWizardForm">
+            <section class="wizard-panel active" data-step-panel="1">
+                <h3>Basic Info</h3>
+                <label class="label">Entry Title *</label>
+                <input type="text" name="entry_title" maxlength="120" placeholder="Title" required>
+                <small class="chart-subtitle">4/120 characters recommended</small>
+
+                <label class="label">Category *</label>
+                <select name="category" required>
+                    <option value="">Select category</option>
+                    <option value="Database & SQL">Database & SQL</option>
+                    <option value="Algorithms">Algorithms</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Machine Learning">Machine Learning</option>
+                    <option value="DevOps">DevOps</option>
+                    <option value="General">General</option>
+                </select>
+
+                <label class="label">Tags</label>
+                <input type="text" name="tags" id="wizardTagInput" placeholder="exam-prep, assignment, project, lab">
+                <div class="wizard-chip-row">
+                    <button type="button" class="tag-pill" data-quick-tag="exam-prep">exam-prep</button>
+                    <button type="button" class="tag-pill" data-quick-tag="assignment">assignment</button>
+                    <button type="button" class="tag-pill" data-quick-tag="debugging">debugging</button>
+                    <button type="button" class="tag-pill" data-quick-tag="theory">theory</button>
+                    <button type="button" class="tag-pill" data-quick-tag="practical">practical</button>
+                    <button type="button" class="tag-pill" data-quick-tag="recursion">recursion</button>
+                    <button type="button" class="tag-pill" data-quick-tag="optimization">optimization</button>
+                    <button type="button" class="tag-pill" data-quick-tag="group-study">group-study</button>
+                    <button type="button" class="tag-pill" data-quick-tag="lab">lab</button>
+                    <button type="button" class="tag-pill" data-quick-tag="project">project</button>
+                </div>
+            </section>
+
+            <section class="wizard-panel" data-step-panel="2">
+                <h3>Problem Context</h3>
+                <div class="wizard-guidance">
+                    <strong>Guidance</strong>
+                    <p>Describe the challenge you encountered - the subject, scenario, and why it was difficult. Be specific so peers can relate.</p>
+                </div>
+                <label class="label">Problem Context *</label>
+                <textarea name="problem_context" minlength="40" maxlength="1000" placeholder="What was the challenge and why was it hard?" required></textarea>
+                <small class="chart-subtitle">Aim for 100 to 500 characters.</small>
+            </section>
+
+            <section class="wizard-panel" data-step-panel="3">
+                <h3>Solution</h3>
+                <div class="wizard-guidance info">
+                    <strong>Guidance</strong>
+                    <p>Break your solution into clear ordered steps. Aim for 3 to 7 concise actions.</p>
+                </div>
+                <label class="label">Solution Steps *</label>
+                <div id="solutionStepsWrap" class="wizard-step-list">
+                    <div class="wizard-step-item">
+                        <span>1</span>
+                        <input type="text" class="wizard-step-input" placeholder="Add step" required>
+                    </div>
+                </div>
+                <button type="button" class="btn" id="addSolutionStep"><i data-lucide="plus"></i> Add another step</button>
+                <input type="hidden" name="solution_steps" id="solutionStepsHidden">
+            </section>
+
+            <section class="wizard-panel" data-step-panel="4">
+                <h3>Resources</h3>
+                <label class="label">Resources & References</label>
+                <textarea name="resources" placeholder="Book title, article URL, or references (one per line)"></textarea>
+
+                <label class="label">Outcome / Result *</label>
+                <textarea name="outcome_result" minlength="40" maxlength="1000" placeholder="What was the result? How did this help you or your peers?" required></textarea>
+            </section>
+
+            <div class="wizard-footer">
+                <button class="btn" type="button" id="wizardBack"><i data-lucide="chevron-left"></i> Back</button>
+                <div class="wizard-dots">
+                    <span class="active"></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <button class="btn primary" type="button" id="wizardNext">Next <i data-lucide="chevron-right"></i></button>
+                <button class="btn success" type="submit" id="wizardPublish"><i data-lucide="check"></i> Publish Entry</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="grid-2">
-    {% for post in posts %}
-        <div class="card">
-            <div class="space-between">
-                <h3 style="margin-top:0;">{{ post.title }}</h3>
-                <span class="badge {{ 'approved' if post.author.role == 'faculty' else 'under_review' }}">
-                    {{ 'Resource' if post.author.role == 'faculty' else 'Experience' }}
-                </span>
-            </div>
-            <p>{{ post.content }}</p>
-            <small style="color:var(--muted);">By {{ post.author.full_name }} on {{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
-        </div>
-    {% else %}
-        <div class="card"><p>{{ empty_message or 'No posts available yet.' }}</p></div>
-    {% endfor %}
+{% if show_publish_success %}
+<div class="modal active" id="knowledgePublishedModal">
+    <div class="modal-card publish-success-card">
+        <div class="feedback-success-icon"><i data-lucide="check"></i></div>
+        <h2 style="margin:0 0 8px;">Entry Published!</h2>
+        <p style="margin:0 0 14px; color:var(--muted);">"{{ published_entry_name or 'Knowledge Entry' }}" is now live on the Knowledge Board.</p>
+        <a class="btn success" href="{{ url_for('student.knowledge_board') }}">Back to Knowledge Board</a>
+    </div>
 </div>
+{% endif %}
+{% endif %}
 {% endblock %}

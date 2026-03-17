@@ -2,155 +2,257 @@
 {% block title %}Faculty Feedback Insights | ClarifAI{% endblock %}
 {% block page_title %}Feedback Insights{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
-    <div>
+<section class="faculty-shell">
+    <div class="flow-breadcrumb">Faculty <span>/</span> Feedback Insights</div>
+
+    <div class="faculty-head-row" style="margin-bottom:14px;">
         <h3 style="margin:0;">Feedback Insights</h3>
-        <p class="chart-subtitle">Analyze approved feedback trends, reasons, and sentiment signals</p>
+        <p class="chart-subtitle">Analyze approved feedback trends, aspect ratings, and sentiment distribution.</p>
     </div>
-</div>
 
-<div class="card" style="margin-bottom:14px;">
-    <form method="get" class="grid-2" style="align-items:end;">
-        <div>
-            <label class="label">Search</label>
-            <input type="text" name="q" value="{{ search }}" placeholder="Subject / semester / reason / text">
-        </div>
-        <div>
-            <label class="label">Sentiment</label>
-            <select name="sentiment">
-                <option value="all" {{ 'selected' if sentiment == 'all' else '' }}>All</option>
-                <option value="positive" {{ 'selected' if sentiment == 'positive' else '' }}>Positive</option>
-                <option value="neutral" {{ 'selected' if sentiment == 'neutral' else '' }}>Neutral</option>
-                <option value="negative" {{ 'selected' if sentiment == 'negative' else '' }}>Negative</option>
+    <article class="card" style="margin-bottom:14px;">
+        <form method="get" class="faculty-filter-row">
+            <input type="hidden" name="view" value="{{ active_view }}">
+            <div class="faculty-filter-chip"><i data-lucide="filter"></i> Filters</div>
+
+            <select name="subject">
+                <option value="all" {{ 'selected' if selected_subject == 'all' else '' }}>All Subjects</option>
+                {% for option in subject_options %}
+                    <option value="{{ option }}" {{ 'selected' if selected_subject == option else '' }}>{{ option }}</option>
+                {% endfor %}
             </select>
-        </div>
-        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
+
+            <select name="semester">
+                <option value="all" {{ 'selected' if selected_semester == 'all' else '' }}>All Semesters</option>
+                {% for option in semester_options %}
+                    <option value="{{ option }}" {{ 'selected' if selected_semester == option else '' }}>{{ option }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="section">
+                <option value="all" {{ 'selected' if selected_section == 'all' else '' }}>All Sections</option>
+                {% for option in section_options %}
+                    <option value="{{ option }}" {{ 'selected' if selected_section == option else '' }}>Section {{ option }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="reason">
+                <option value="all" {{ 'selected' if selected_reason == 'all' else '' }}>All Reasons</option>
+                {% for option in reason_options %}
+                    <option value="{{ option }}" {{ 'selected' if selected_reason == option else '' }}>{{ option.replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="month" name="trend_start" value="{{ trend_start }}" aria-label="Trend start month" required>
+            <input type="month" name="trend_end" value="{{ trend_end }}" aria-label="Trend end month" required>
+
             <button class="btn primary" type="submit">Apply</button>
-            <a class="btn" href="{{ url_for('faculty.reviews') }}">Reset</a>
-        </div>
-    </form>
-</div>
-
-<div class="grid-4" style="margin-bottom:14px;">
-    <div class="card modern-stat"><small>Total Approved</small><h3>{{ kpi.total }}</h3></div>
-    <div class="card modern-stat"><small>Positive</small><h3>{{ kpi.positive }}</h3></div>
-    <div class="card modern-stat"><small>Neutral</small><h3>{{ kpi.neutral }}</h3></div>
-    <div class="card modern-stat"><small>Negative</small><h3>{{ kpi.negative }}</h3></div>
-</div>
-
-<div class="grid-3" style="margin-bottom:14px;">
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Sentiment Split</h3>
-        <p class="chart-subtitle">Distribution across approved entries</p>
-        <canvas id="facultySentimentPie"></canvas>
-    </div>
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Top Feedback Reasons</h3>
-        <p class="chart-subtitle">Most frequent issue categories</p>
-        <canvas id="facultyReasonBar"></canvas>
-    </div>
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Monthly Sentiment Trend</h3>
-        <p class="chart-subtitle">Positive vs negative movement</p>
-        <canvas id="facultyTrendLine"></canvas>
-    </div>
-</div>
-
-<div class="card">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Subject</th>
-                <th>Semester</th>
-                <th>Reason</th>
-                <th>Feedback</th>
-                <th>Sentiment</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for item in reviews %}
-            <tr>
-                <td>{{ item.subject }}</td>
-                <td>{{ item.semester }}</td>
-                <td>{{ item.reason }}</td>
-                <td>{{ item.feedback_text }}</td>
-                <td>{{ item.sentiment|title }}</td>
-                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
-            </tr>
+            <a class="btn" href="{{ url_for('faculty.reviews', view=active_view) }}">Reset</a>
+        </form>
+        {% if trend_filter_error %}
+        <p class="chart-subtitle" style="margin-top:8px; color:var(--warning);">{{ trend_filter_error }}</p>
         {% else %}
-            <tr><td colspan="6">No approved feedback found.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
+        <p class="chart-subtitle" style="margin-top:8px;">Month range requires at least 6 months.</p>
+        {% endif %}
+    </article>
+
+    <div class="grid-4 faculty-kpi-grid" style="margin-bottom:14px;">
+        <article class="card faculty-kpi-card">
+            <h3>{{ kpi.total }}</h3>
+            <p>Total Entries</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-green">
+            <h3>{{ kpi.positive }}</h3>
+            <p>Positive</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-amber">
+            <h3>{{ kpi.neutral }}</h3>
+            <p>Neutral</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-red">
+            <h3>{{ kpi.negative }}</h3>
+            <p>Negative</p>
+        </article>
+    </div>
+
+    <nav class="insights-tabs" style="margin-bottom:14px;">
+        <a class="{{ 'active' if active_view == 'charts' else '' }}" href="{{ url_for('faculty.reviews', view='charts', subject=selected_subject, semester=selected_semester, section=selected_section, reason=selected_reason, trend_start=trend_start, trend_end=trend_end, sentiment=sentiment, q=search) }}">Charts & Overview</a>
+        <a class="{{ 'active' if active_view == 'entries' else '' }}" href="{{ url_for('faculty.reviews', view='entries', subject=selected_subject, semester=selected_semester, section=selected_section, reason=selected_reason, trend_start=trend_start, trend_end=trend_end, sentiment=sentiment, q=search) }}">Feedback Entries</a>
+    </nav>
+
+    {% if active_view == 'charts' %}
+    <div class="grid-3" style="margin-bottom:14px;">
+        <article class="card chart-card" style="grid-column: span 2;">
+            <h3 style="margin:0;">Semester Sentiment Trend</h3>
+            <p class="chart-subtitle">Monthly breakdown of approved feedback sentiment</p>
+            <canvas id="insightsTrendChart"></canvas>
+            {% if not chart_payload.has_trend_data %}
+                <p style="margin:8px 0 0; color:var(--muted);">No trend points available for the selected range and filters. Chart is shown with zero values.</p>
+            {% endif %}
+        </article>
+        <article class="card chart-card">
+            <h3 style="margin:0;">Aspect-wise Average Ratings</h3>
+            <p class="chart-subtitle">Student ratings across all teaching dimensions</p>
+            <canvas id="insightsAspectChart"></canvas>
+            {% if not chart_payload.has_aspect_data %}
+                <p style="margin:8px 0 0; color:var(--muted);">No aspect score data available for the selected filters. Chart is shown with zero values.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    <article class="card chart-card" style="margin-bottom:14px;">
+        <h3 style="margin:0;">Subject-wise Sentiment Distribution</h3>
+        <p class="chart-subtitle">Stacked view of sentiment per subject</p>
+        <canvas id="insightsSubjectChart"></canvas>
+        {% if not chart_payload.has_subject_data %}
+            <p style="margin:8px 0 0; color:var(--muted);">No subject sentiment distribution found for the selected filters. Chart is shown with zero values.</p>
+        {% endif %}
+    </article>
+
+    <div class="grid-2">
+        <article class="card chart-card compact-donut">
+            <h3 style="margin:0;">Overall Sentiment Split</h3>
+            <div class="donut-canvas-wrap">
+                <canvas id="insightsSplitChart"></canvas>
+            </div>
+            {% if not chart_payload.has_split_data %}
+                <p style="margin:8px 0 0; color:var(--muted);">No feedback available in current filter range. Split is shown with zero values.</p>
+            {% endif %}
+        </article>
+
+        <article class="card">
+            <h3 style="margin:0 0 10px;">Score Summary</h3>
+            <div class="insights-score-list">
+                {% for row in score_summary %}
+                    <div class="insights-score-row">
+                        <span>{{ row.label }}</span>
+                        {% if row.value is not none %}
+                            <div class="faculty-score-track"><span style="width:{{ (row.value / 5 * 100)|round(0, 'floor') }}%"></span></div>
+                            <strong>{{ "%.1f"|format(row.value) }}/5</strong>
+                        {% else %}
+                            <div class="faculty-score-track"><span style="width:0%"></span></div>
+                            <strong>--</strong>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+    {% else %}
+    <article class="card table-wrap">
+        <table class="table faculty-feedback-table">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Subject</th>
+                    <th>Semester</th>
+                    <th>Reason</th>
+                    <th>Tags</th>
+                    <th>Feedback</th>
+                    <th>Sentiment</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in reviews %}
+                <tr>
+                    <td>{{ item.course_code or '-' }}</td>
+                    <td>{{ item.subject }}</td>
+                    <td>{{ item.semester }}</td>
+                    <td>{{ item.reason.replace('_', ' ')|title }}</td>
+                    <td>{{ item.feedback_tags.replace(',', ', ') if item.feedback_tags else '-' }}</td>
+                    <td>{{ item.feedback_text[:180] }}{% if item.feedback_text|length > 180 %}...{% endif %}</td>
+                    <td><span class="faculty-sentiment-pill {{ item.sentiment }}">{{ item.sentiment|title }}</span></td>
+                    <td>{{ item.created_at|ist_datetime('%d %b %Y') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8">No approved feedback found for current filters.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+    {% endif %}
+</section>
 {% endblock %}
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
+    if ({{ 'true' if active_view == 'charts' else 'false' }} !== true) {
+        return;
+    }
+
     const payload = {{ chart_payload | tojson }};
     const css = getComputedStyle(document.documentElement);
     const textColor = css.getPropertyValue('--text').trim();
     const gridColor = css.getPropertyValue('--border').trim();
 
-    new Chart(document.getElementById('facultySentimentPie'), {
-        type: 'pie',
-        data: {
-            labels: payload.sentiment_labels,
-            datasets: [{
-                data: payload.sentiment_values,
-                backgroundColor: ['#34d399', '#fbbf24', '#fb7185']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: textColor } } }
-        }
-    });
+    const trendLabels = (payload.trend_labels && payload.trend_labels.length)
+        ? payload.trend_labels
+        : ['No Data'];
+    const trendPositive = (payload.trend_positive && payload.trend_positive.length)
+        ? payload.trend_positive
+        : [0];
+    const trendNeutral = (payload.trend_neutral && payload.trend_neutral.length)
+        ? payload.trend_neutral
+        : [0];
+    const trendNegative = (payload.trend_negative && payload.trend_negative.length)
+        ? payload.trend_negative
+        : [0];
 
-    new Chart(document.getElementById('facultyReasonBar'), {
-        type: 'bar',
-        data: {
-            labels: payload.reason_labels,
-            datasets: [{
-                label: 'Count',
-                data: payload.reason_values,
-                backgroundColor: '#6366f1'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: { legend: { labels: { color: textColor } } },
-            scales: {
-                x: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true },
-                y: { ticks: { color: textColor }, grid: { color: gridColor } }
-            }
-        }
-    });
+    const aspectLabels = (payload.aspect_labels && payload.aspect_labels.length)
+        ? payload.aspect_labels
+        : ['Clarity', 'Pace', 'Assessment', 'Engagement'];
+    const aspectValues = (payload.aspect_values && payload.aspect_values.length)
+        ? payload.aspect_values
+        : [0, 0, 0, 0];
 
-    new Chart(document.getElementById('facultyTrendLine'), {
+    const subjectLabels = (payload.subject_labels && payload.subject_labels.length)
+        ? payload.subject_labels
+        : ['No Data'];
+    const subjectPositive = (payload.subject_positive && payload.subject_positive.length)
+        ? payload.subject_positive
+        : [0];
+    const subjectNeutral = (payload.subject_neutral && payload.subject_neutral.length)
+        ? payload.subject_neutral
+        : [0];
+    const subjectNegative = (payload.subject_negative && payload.subject_negative.length)
+        ? payload.subject_negative
+        : [0];
+
+    const splitValues = (payload.sentiment_values && payload.sentiment_values.reduce((a, b) => a + b, 0) > 0)
+        ? payload.sentiment_values
+        : [0, 0, 0];
+
+    const trendCanvas = document.getElementById('insightsTrendChart');
+    if (trendCanvas) {
+    new Chart(trendCanvas, {
         type: 'line',
         data: {
-            labels: payload.trend_labels,
+            labels: trendLabels,
             datasets: [
                 {
                     label: 'Positive',
-                    data: payload.trend_positive,
+                    data: trendPositive,
                     borderColor: '#34d399',
                     backgroundColor: 'rgba(52, 211, 153, 0.16)',
                     fill: true,
                     tension: 0.3
                 },
                 {
+                    label: 'Neutral',
+                    data: trendNeutral,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.14)',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
                     label: 'Negative',
-                    data: payload.trend_negative,
-                    borderColor: '#fb7185',
-                    backgroundColor: 'rgba(251, 113, 133, 0.16)',
+                    data: trendNegative,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.14)',
                     fill: true,
                     tension: 0.3
                 }
@@ -166,6 +268,89 @@
             }
         }
     });
+    }
+
+    const aspectCanvas = document.getElementById('insightsAspectChart');
+    if (aspectCanvas) {
+    new Chart(aspectCanvas, {
+        type: 'bar',
+        data: {
+            labels: aspectLabels,
+            datasets: [{
+                label: 'Average Score',
+                data: aspectValues,
+                backgroundColor: '#22d3ee'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true, max: 5 },
+                y: { ticks: { color: textColor }, grid: { color: gridColor } }
+            }
+        }
+    });
+    }
+
+    const subjectCanvas = document.getElementById('insightsSubjectChart');
+    if (subjectCanvas) {
+    new Chart(subjectCanvas, {
+        type: 'bar',
+        data: {
+            labels: subjectLabels,
+            datasets: [
+                {
+                    label: 'Positive',
+                    data: subjectPositive,
+                    backgroundColor: 'rgba(52, 211, 153, 0.78)'
+                },
+                {
+                    label: 'Neutral',
+                    data: subjectNeutral,
+                    backgroundColor: 'rgba(245, 158, 11, 0.78)'
+                },
+                {
+                    label: 'Negative',
+                    data: subjectNegative,
+                    backgroundColor: 'rgba(239, 68, 68, 0.78)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: gridColor }, stacked: true },
+                y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true, stacked: true }
+            }
+        }
+    });
+    }
+
+    const splitCanvas = document.getElementById('insightsSplitChart');
+    if (splitCanvas) {
+    new Chart(splitCanvas, {
+        type: 'doughnut',
+        data: {
+            labels: payload.split_labels,
+            datasets: [{
+                data: splitValues,
+                backgroundColor: ['#34d399', '#f59e0b', '#ef4444']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            cutout: '64%',
+            plugins: { legend: { labels: { color: textColor } } }
+        }
+    });
+    }
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}Admin Updates | ClarifAI{% endblock %}
+{% block page_title %}Admin Updates{% endblock %}
+{% block content %}
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Updates</div>
+
+    <div class="space-between" style="margin-bottom:12px; align-items:flex-end;">
+        <div>
+            <h2 style="margin:0;">Updates Center</h2>
+            <p class="chart-subtitle">Track moderation activity, experience governance, and system queue health.</p>
+        </div>
+        <a class="btn" href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:12px;">
+        <article class="card admin-kpi-card kpi-amber">
+            <small>Moderation Queue</small>
+            <h3 id="updatesModerationQueueCount">{{ moderation_queue_count }}</h3>
+            <p>Feedback awaiting action</p>
+        </article>
+        <article class="card admin-kpi-card kpi-violet">
+            <small>Pending Experiences</small>
+            <h3 id="updatesPendingExperienceCount">{{ pending_experience_count }}</h3>
+            <p>Student posts awaiting moderation</p>
+        </article>
+        <article class="card admin-kpi-card kpi-red">
+            <small>Open Experience Reports</small>
+            <h3 id="updatesOpenReportCount">{{ open_experience_reports_count }}</h3>
+            <p>Community flags requiring review</p>
+        </article>
+        <article class="card admin-kpi-card kpi-blue">
+            <small>Unread Suggestions</small>
+            <h3 id="updatesUnreadSuggestionCount">{{ unread_suggestions_count }}</h3>
+            <p>Website contact submissions</p>
+        </article>
+        <article class="card admin-kpi-card kpi-teal">
+            <small>Pending Semester Exceptions</small>
+            <h3 id="updatesPendingSemesterCount">{{ pending_semester_exceptions_count }}</h3>
+            <p>Student verification requests</p>
+        </article>
+        <article class="card admin-kpi-card kpi-amber">
+            <small>Faculty Delivery Queue</small>
+            <h3 id="updatesFacultyQueueCount">{{ pending_faculty_feedback_count }}</h3>
+            <p>Holding or under-review mapped feedback</p>
+        </article>
+    </div>
+
+    <article class="card table-wrap">
+        <div class="space-between" style="margin-bottom:10px;">
+            <h3 style="margin:0;">Recent Activity Feed</h3>
+            <div class="flex">
+                <a class="btn {{ 'primary' if selected_type == 'all' else '' }}" href="{{ url_for('admin.updates_page', type='all') }}">All</a>
+                <a class="btn {{ 'primary' if selected_type == 'moderation' else '' }}" href="{{ url_for('admin.updates_page', type='moderation') }}">Moderation</a>
+                <a class="btn {{ 'primary' if selected_type == 'experience' else '' }}" href="{{ url_for('admin.updates_page', type='experience') }}">Experience</a>
+                <a class="btn {{ 'primary' if selected_type == 'reports' else '' }}" href="{{ url_for('admin.updates_page', type='reports') }}">Reports</a>
+                <a class="btn {{ 'primary' if selected_type == 'system' else '' }}" href="{{ url_for('admin.updates_page', type='system') }}">System</a>
+            </div>
+        </div>
+        <p id="updatesLastRefresh" class="chart-subtitle" style="margin-top:0;">Auto-refreshing every 20 seconds.</p>
+
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="updatesFeedBody">
+                {% for event in events[:80] %}
+                <tr>
+                    <td>{{ event.created_at|ist_datetime('%d %b %Y %I:%M %p') if event.created_at else '-' }}</td>
+                    <td><span class="tag-pill">{{ event.kind|title }}</span></td>
+                    <td>{{ event.title }}</td>
+                    <td>{{ event.detail }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if events %}
+        <p id="updatesFeedEmpty" style="margin:8px 0 0; color:var(--muted); display:none;">No updates found for this filter yet.</p>
+        {% else %}
+        <p id="updatesFeedEmpty" style="margin:8px 0 0; color:var(--muted);">No updates found for this filter yet.</p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(() => {
+    const liveUrl = "{{ url_for('admin.updates_live') }}";
+    const selectedType = new URLSearchParams(window.location.search).get('type') || "{{ selected_type }}";
+    const counts = {
+        moderation_queue_count: document.getElementById('updatesModerationQueueCount'),
+        pending_experience_count: document.getElementById('updatesPendingExperienceCount'),
+        open_experience_reports_count: document.getElementById('updatesOpenReportCount'),
+        unread_suggestions_count: document.getElementById('updatesUnreadSuggestionCount'),
+        pending_semester_exceptions_count: document.getElementById('updatesPendingSemesterCount'),
+        pending_faculty_feedback_count: document.getElementById('updatesFacultyQueueCount')
+    };
+    const tableBody = document.getElementById('updatesFeedBody');
+    const emptyState = document.getElementById('updatesFeedEmpty');
+    const refreshLabel = document.getElementById('updatesLastRefresh');
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const renderEvents = (events) => {
+        if (!events || !events.length) {
+            tableBody.innerHTML = '';
+            emptyState.style.display = '';
+            return;
+        }
+        emptyState.style.display = 'none';
+        tableBody.innerHTML = events.map((event) => `
+            <tr>
+                <td>${escapeHtml(event.created_at_ist || '-')}</td>
+                <td><span class="tag-pill">${escapeHtml((event.kind || '').replace(/^./, (m) => m.toUpperCase()))}</span></td>
+                <td>${escapeHtml(event.title || '-')}</td>
+                <td>${escapeHtml(event.detail || '-')}</td>
+            </tr>
+        `).join('');
+    };
+
+    let inFlight = false;
+    const refreshNow = async () => {
+        if (inFlight) {
+            return;
+        }
+        inFlight = true;
+        try {
+            const response = await fetch(`${liveUrl}?type=${encodeURIComponent(selectedType)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                cache: 'no-store'
+            });
+            if (!response.ok) {
+                throw new Error('Live refresh failed');
+            }
+            const payload = await response.json();
+            const nextCounts = payload.counts || {};
+            Object.keys(counts).forEach((key) => {
+                if (counts[key]) {
+                    counts[key].textContent = nextCounts[key] ?? '0';
+                }
+            });
+            renderEvents(payload.events || []);
+            refreshLabel.textContent = `Auto-refreshing every 20 seconds. Last sync: ${new Date().toLocaleTimeString()}`;
+        } catch (error) {
+            refreshLabel.textContent = 'Auto-refreshing every 20 seconds. Waiting to reconnect...';
+        } finally {
+            inFlight = false;
+        }
+    };
+
+    refreshNow();
+    const timer = window.setInterval(refreshNow, 20000);
+    window.addEventListener('beforeunload', () => window.clearInterval(timer));
+})();
+</script>
+{% endblock %}

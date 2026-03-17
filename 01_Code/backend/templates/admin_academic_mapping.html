@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+{% block title %}Academic Mapping | ClarifAI{% endblock %}
+{% block page_title %}Academic Mapping{% endblock %}
+{% block content %}
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Academic Mapping</div>
+
+    <div class="admin-head-row" style="margin-bottom:12px;">
+        <div>
+            <h3 style="margin:0;">Subject Offering + Faculty Assignment Console</h3>
+            <p class="chart-subtitle">Make teacher-subject-semester-section mapping visible and editable from UI.</p>
+            <p class="chart-subtitle" style="margin-top:2px;">Auto-sync from preset mapping: created {{ stats.preset_sync_created }}, missing faculty {{ stats.preset_sync_missing_faculty }}, missing offering {{ stats.preset_sync_missing_offering }}.</p>
+            <p class="chart-subtitle" style="margin-top:2px;">KPI cards auto-refresh every 15 seconds.</p>
+        </div>
+        <div class="flex" style="gap:8px; align-items:center;">
+            <a class="btn" href="{{ url_for('admin.semester_exceptions_page') }}">Semester Exceptions</a>
+            <a class="btn" href="{{ url_for('admin.users') }}">User Management</a>
+        </div>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card kpi-blue"><h3 data-stat="offerings_total">{{ stats.offerings_total }}</h3><p>Total Subject Offerings</p></article>
+        <article class="card admin-kpi-card kpi-teal"><h3 data-stat="offerings_active">{{ stats.offerings_active }}</h3><p>Active Offerings</p></article>
+        <article class="card admin-kpi-card kpi-violet"><h3 data-stat="assignments_total">{{ stats.assignments_total }}</h3><p>Total Faculty Assignments</p></article>
+        <article class="card admin-kpi-card kpi-amber"><h3 data-stat="mapped_faculty">{{ stats.mapped_faculty }}</h3><p>Faculty Mapped</p></article>
+        <article class="card admin-kpi-card kpi-blue"><h3 data-stat="preset_rows_total">{{ stats.preset_rows_total }}</h3><p>Preset Mapping Rows</p></article>
+        <article class="card admin-kpi-card kpi-green"><h3 data-stat="preset_registered_rows">{{ stats.preset_registered_rows }}</h3><p>Rows Linked to Faculty Accounts</p></article>
+        <article class="card admin-kpi-card kpi-violet"><h3 data-stat="preset_logged_in_rows">{{ stats.preset_logged_in_rows }}</h3><p>Rows with Faculty Logged In (At Least Once)</p></article>
+    </div>
+
+    <div class="admin-dashboard-grid" style="margin-bottom:14px;">
+        <article class="card admin-panel">
+            <h3 style="margin-top:0;">Add or Update Subject Offering</h3>
+            <form method="post" action="{{ url_for('admin.create_subject_offering') }}" class="admin-action-form" style="margin-top:0; border-top:0; padding-top:0;">
+                <div class="grid-2" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">
+                    <input type="text" name="course_code" placeholder="Course (MCA/BCA)" required>
+                    <input type="number" min="1" name="semester_no" placeholder="Semester" required>
+                    <input type="text" name="section" placeholder="Section (A/B/C)" required>
+                    <input type="text" name="subject_code" placeholder="Subject Code (MCA301)" required>
+                </div>
+                <input type="text" name="subject_name" placeholder="Subject Name" required>
+                <div class="flex" style="gap:8px; align-items:center; margin-top:8px;">
+                    <label class="admin-filter-label" for="offering-is-active">Status</label>
+                    <select id="offering-is-active" name="is_active" style="max-width:160px;">
+                        <option value="yes">Active</option>
+                        <option value="no">Inactive</option>
+                    </select>
+                    <button class="btn success" type="submit">Save Offering</button>
+                </div>
+            </form>
+        </article>
+
+        <article class="card admin-panel">
+            <h3 style="margin-top:0;">Add or Update Faculty Assignment</h3>
+            <form method="post" action="{{ url_for('admin.create_faculty_assignment') }}" class="admin-action-form" style="margin-top:0; border-top:0; padding-top:0;">
+                <select name="subject_offering_id" required>
+                    <option value="">Select Subject Offering</option>
+                    {% for offering in offering_options %}
+                        <option value="{{ offering.id }}">{{ offering.course_code }} · Sem {{ offering.semester_no }} · {{ offering.section }} · {{ offering.subject_code }} - {{ offering.subject_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="faculty_user_id" required>
+                    <option value="">Select Faculty</option>
+                    {% for faculty in faculty_list %}
+                        <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.email }}){% if faculty.faculty_id %} · {{ faculty.faculty_id }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+                <div class="grid-2" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">
+                    <div>
+                        <label class="admin-filter-label" for="effective-from">Effective From</label>
+                        <input id="effective-from" type="date" name="effective_from">
+                    </div>
+                    <div>
+                        <label class="admin-filter-label" for="effective-to">Effective To (Optional)</label>
+                        <input id="effective-to" type="date" name="effective_to">
+                    </div>
+                </div>
+                <div class="flex" style="gap:8px; align-items:center; margin-top:8px;">
+                    <label class="admin-filter-label" for="assignment-is-active">Status</label>
+                    <select id="assignment-is-active" name="is_active" style="max-width:160px;">
+                        <option value="yes">Active</option>
+                        <option value="no">Inactive</option>
+                    </select>
+                    <button class="btn success" type="submit">Save Assignment</button>
+                </div>
+            </form>
+        </article>
+    </div>
+
+    <div class="admin-dashboard-grid" style="margin-bottom:14px; grid-template-columns:minmax(0,1fr) minmax(0,1fr);">
+        <article class="card admin-panel">
+            <h3 style="margin-top:0;">Quick Import from subjects.csv</h3>
+            <p class="chart-subtitle" style="margin-top:0;">Creates/updates offerings by reading backend/data/subjects.csv for one target section.</p>
+            <form method="post" action="{{ url_for('admin.import_subject_offerings_from_catalog') }}" class="admin-action-form" style="margin-top:0; border-top:0; padding-top:0;">
+                <div class="grid-2" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">
+                    <select name="course_code">
+                        <option value="ALL">All Courses</option>
+                        <option value="MCA">MCA</option>
+                        <option value="BCA">BCA</option>
+                    </select>
+                    <input type="number" min="1" name="semester_no" placeholder="Optional semester filter">
+                    <input type="text" name="section" placeholder="Section for imported offerings (A/B/C)" value="A" required>
+                </div>
+                <button class="btn primary" type="submit" style="margin-top:8px;">Import from Catalog</button>
+            </form>
+        </article>
+
+        <article class="card admin-panel">
+            <h3 style="margin-top:0;">CSV Import (Bulk)</h3>
+            <p class="chart-subtitle" style="margin-top:0;">Upload CSV files to bulk create/update offerings and assignments.</p>
+            <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.import_subject_offerings_csv') }}" class="admin-action-form" style="margin-top:0; border-top:0; padding-top:0;">
+                <label class="admin-filter-label">Subject Offerings CSV</label>
+                <input type="file" name="offering_csv" accept=".csv" required>
+                <small class="chart-subtitle" style="display:block; margin-top:6px;">Headers: course_code, semester_no, section, subject_code, subject_name, is_active(optional)</small>
+                <button class="btn" type="submit" style="margin-top:8px;">Import Offerings CSV</button>
+            </form>
+            <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.import_faculty_assignments_csv') }}" class="admin-action-form">
+                <label class="admin-filter-label">Faculty Assignments CSV</label>
+                <input type="file" name="assignment_csv" accept=".csv" required>
+                <small class="chart-subtitle" style="display:block; margin-top:6px;">Headers: subject_offering_id OR (course_code,semester_no,section,subject_code), faculty_email/faculty_id/faculty_user_id, effective_from(optional), effective_to(optional), is_active(optional)</small>
+                <button class="btn" type="submit" style="margin-top:8px;">Import Assignments CSV</button>
+            </form>
+        </article>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row users" style="grid-template-columns:repeat(5, minmax(0, 1fr)) auto auto;">
+            <select name="preset_course">
+                <option value="all" {{ 'selected' if preset_filters.course == 'ALL' else '' }}>All Courses</option>
+                {% for value in preset_filter_options.courses %}
+                    <option value="{{ value }}" {{ 'selected' if preset_filters.course == value else '' }}>{{ value }}</option>
+                {% endfor %}
+            </select>
+            <select name="preset_semester">
+                <option value="all" {{ 'selected' if preset_filters.semester|lower == 'all' else '' }}>All Semesters</option>
+                {% for value in preset_filter_options.semesters %}
+                    <option value="{{ value }}" {{ 'selected' if preset_filters.semester == value else '' }}>Semester {{ value }}</option>
+                {% endfor %}
+            </select>
+            <select name="preset_section">
+                <option value="all" {{ 'selected' if preset_filters.section == 'ALL' else '' }}>All Sections</option>
+                {% for value in preset_filter_options.sections %}
+                    <option value="{{ value }}" {{ 'selected' if preset_filters.section == value else '' }}>Section {{ value }}</option>
+                {% endfor %}
+            </select>
+            <select name="preset_subject">
+                <option value="all" {{ 'selected' if preset_filters.subject == 'ALL' else '' }}>All Subjects</option>
+                {% for value in preset_filter_options.subjects %}
+                    <option value="{{ value }}" {{ 'selected' if preset_filters.subject == value else '' }}>{{ value }}</option>
+                {% endfor %}
+            </select>
+            <select name="preset_faculty">
+                <option value="all" {{ 'selected' if preset_filters.faculty == 'ALL' else '' }}>All Faculty</option>
+                {% for item in preset_filter_options.faculty %}
+                    <option value="{{ item.value }}" {{ 'selected' if preset_filters.faculty == item.value else '' }}>{{ item.label }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('admin.academic_mapping_page') }}">Reset</a>
+        </form>
+    </article>
+
+    <article class="card table-wrap" style="margin-bottom:14px;">
+        <h3 style="margin-top:0;">Preset Mapping (Course / Semester / Section / Subject / Faculty)</h3>
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>Class Slot</th>
+                    <th>Subject</th>
+                    <th>Preset Faculty</th>
+                    <th>Registered Match</th>
+                    <th>Login Activity</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in preset_rows %}
+                <tr>
+                    <td>
+                        {{ row.course_code }} · Sem {{ row.semester_no }}
+                        <small class="chart-subtitle" style="display:block;">Section {{ row.section }}</small>
+                    </td>
+                    <td>
+                        <span class="faculty-subject-text">{{ row.subject_code }}</span>
+                        <small class="chart-subtitle" style="display:block;">{{ row.subject_name }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ row.faculty_name or '-' }}</strong>
+                        <small class="chart-subtitle" style="display:block;">{{ row.faculty_id or '-' }}</small>
+                        <small class="chart-subtitle" style="display:block;">{{ row.faculty_email or '-' }}</small>
+                    </td>
+                    <td>
+                        {% if row.is_registered %}
+                            <span class="admin-status-dot active">Registered</span>
+                            <small class="chart-subtitle" style="display:block;">{{ row.registered_name }}</small>
+                            <small class="chart-subtitle" style="display:block;">{{ row.registered_email }}</small>
+                        {% else %}
+                            <span class="admin-status-dot inactive">Not Registered</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not row.is_registered %}
+                            <span class="chart-subtitle">Not applicable</span>
+                        {% elif row.has_logged_in %}
+                            <span class="admin-status-dot active">Logged In</span>
+                            <small class="chart-subtitle" style="display:block;">First: {{ row.first_login_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                            {% if row.last_login_at %}
+                            <small class="chart-subtitle" style="display:block;">Last: {{ row.last_login_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                            {% endif %}
+                        {% else %}
+                            <span class="admin-status-dot inactive">Not Logged In Yet</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.is_active and row.is_active.lower() in ['yes', 'true', '1', 'active'] %}
+                            <span class="admin-status-dot active">Active</span>
+                        {% else %}
+                            <span class="admin-status-dot inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No preset rows found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+
+    <article class="card table-wrap" style="margin-bottom:14px;">
+        <h3 style="margin-top:0;">Subject Offerings (Visible Mapping)</h3>
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>Offering</th>
+                    <th>Class Slot</th>
+                    <th>Status</th>
+                    <th>Assigned Faculty</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for offering in offerings %}
+                {% set row_assignments = assignments_by_offering.get(offering.id, []) %}
+                <tr>
+                    <td>
+                        <span class="faculty-subject-text">{{ offering.subject_code }}</span>
+                        <strong style="display:block;">{{ offering.subject_name }}</strong>
+                        <small class="chart-subtitle">ID {{ offering.id }}</small>
+                    </td>
+                    <td>
+                        {{ offering.course_code }} · Sem {{ offering.semester_no }}
+                        <small class="chart-subtitle" style="display:block;">Section {{ offering.section }}</small>
+                    </td>
+                    <td>
+                        {% if offering.is_active %}
+                            <span class="admin-status-dot active">Active</span>
+                        {% else %}
+                            <span class="admin-status-dot inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for assignment in row_assignments %}
+                            <div style="margin-bottom:6px;">
+                                <span class="audit-chip {{ 'approve' if assignment.is_active else 'reject' }}">{{ assignment.faculty_user.full_name }}</span>
+                                <small class="chart-subtitle" style="display:block;">{{ assignment.faculty_user.email }}{% if assignment.faculty_user.faculty_id %} · {{ assignment.faculty_user.faculty_id }}{% endif %}</small>
+                                <small class="chart-subtitle" style="display:block;">From {{ assignment.effective_from|ist_datetime('%d %b %Y') }}{% if assignment.effective_to %} to {{ assignment.effective_to|ist_datetime('%d %b %Y') }}{% endif %}</small>
+                            </div>
+                        {% else %}
+                            <span class="chart-subtitle">No faculty assigned</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.toggle_subject_offering_active', offering_id=offering.id) }}">
+                            <button class="btn {{ 'danger' if offering.is_active else 'success' }}" type="submit">
+                                {{ 'Deactivate' if offering.is_active else 'Activate' }}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5">No offerings found for current search.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+
+    <article class="card table-wrap">
+        <h3 style="margin-top:0;">Faculty Assignments (Editable Status)</h3>
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>Assignment</th>
+                    <th>Offering</th>
+                    <th>Faculty</th>
+                    <th>Timeline</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for assignment in assignment_rows %}
+                <tr>
+                    <td>
+                        <strong>#{{ assignment.id }}</strong>
+                        <small class="chart-subtitle" style="display:block;">Created {{ assignment.created_at|ist_datetime('%d %b %Y') }}</small>
+                    </td>
+                    <td>
+                        <span class="faculty-subject-text">{{ assignment.subject_offering.subject_code }}</span>
+                        <small class="chart-subtitle" style="display:block;">{{ assignment.subject_offering.course_code }} · Sem {{ assignment.subject_offering.semester_no }} · {{ assignment.subject_offering.section }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ assignment.faculty_user.full_name }}</strong>
+                        <small class="chart-subtitle" style="display:block;">{{ assignment.faculty_user.email }}</small>
+                        {% if assignment.faculty_user.faculty_id %}
+                        <small class="chart-subtitle" style="display:block;">{{ assignment.faculty_user.faculty_id }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ assignment.effective_from|ist_datetime('%d %b %Y') }}
+                        <small class="chart-subtitle" style="display:block;">to {{ assignment.effective_to|ist_datetime('%d %b %Y') if assignment.effective_to else 'Open-ended' }}</small>
+                    </td>
+                    <td>
+                        {% if assignment.is_active %}
+                            <span class="admin-status-dot active">Active</span>
+                        {% else %}
+                            <span class="admin-status-dot inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{{ url_for('admin.toggle_faculty_assignment_active', assignment_id=assignment.id) }}">
+                            <button class="btn {{ 'danger' if assignment.is_active else 'success' }}" type="submit">
+                                {{ 'Deactivate' if assignment.is_active else 'Activate' }}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No assignments found for current search.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const statNodes = Array.from(document.querySelectorAll('[data-stat]'));
+    if (!statNodes.length) {
+        return;
+    }
+
+    const endpoint = "{{ url_for('admin.academic_mapping_stats') }}";
+    const refreshEveryMs = 15000;
+    let loading = false;
+
+    const renderStats = (stats) => {
+        statNodes.forEach((node) => {
+            const key = node.dataset.stat;
+            if (!Object.prototype.hasOwnProperty.call(stats, key)) {
+                return;
+            }
+            node.textContent = String(stats[key]);
+        });
+    };
+
+    const refresh = async () => {
+        if (loading) {
+            return;
+        }
+        loading = true;
+        try {
+            const response = await fetch(endpoint, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                cache: 'no-store'
+            });
+            if (!response.ok) {
+                return;
+            }
+            const payload = await response.json();
+            if (payload && payload.ok && payload.stats) {
+                renderStats(payload.stats);
+            }
+        } catch (error) {
+            console.debug('Academic mapping stats refresh skipped:', error);
+        } finally {
+            loading = false;
+        }
+    };
+
+    window.setInterval(refresh, refreshEveryMs);
+})();
+</script>
+{% endblock %}

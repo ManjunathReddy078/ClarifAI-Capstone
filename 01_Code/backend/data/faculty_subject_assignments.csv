@@ -1,0 +1,51 @@
+course_code,semester_no,section,subject_code,subject_name,faculty_id,faculty_name,faculty_email,is_active
+BCA,4,A,BCA401,Advanced Java and Frameworks,FAC1289,Pooja Singh,pooja234@gmail.com,YES
+BCA,4,B,BCA401,Advanced Java and Frameworks,FAC7867,Niteesh Kumar,nitishrk2@gmail.com,YES
+BCA,4,C,BCA401,Advanced Java and Frameworks,FAC1234,Katti M,katti3@gmail.com,YES
+BCA,4,D,BCA401,Advanced Java and Frameworks,FAC6776,Nisha Singh,nisha8@gmail.com,YES
+BCA,4,E,BCA401,Advanced Java and Frameworks,FAC1111,Archana Reddy,arch7@gmail.com,YES
+BCA,4,A,BCA402,PHP and MySQL Development,FACMC001,Apoorva Sundaram,apoorva.sundaram1621@gmail.com,YES
+BCA,4,B,BCA402,PHP and MySQL Development,FACMC002,Ravi Patel,ravi.patel1622@yahoo.com,YES
+BCA,4,C,BCA402,PHP and MySQL Development,FACMC003,Mohammed Naidu,mohammed.naidu1623@hotmail.com,YES
+BCA,4,D,BCA402,PHP and MySQL Development,FACMC004,Druthi Mukherjee,druthi.mukherjee1624@outlook.com,YES
+BCA,4,E,BCA402,PHP and MySQL Development,FACMC005,Sneha Joshi,sneha.joshi1625@yahoo.com,YES
+BCA,4,A,BCA403,Computer Graphics and Visualization,FACMC006,Arun Bhatt,arun.bhatt1626@gmail.com,YES
+BCA,4,B,BCA403,Computer Graphics and Visualization,FACMC007,Rishab Banerjee,rishab.banerjee1627@hotmail.com,YES
+BCA,4,C,BCA403,Computer Graphics and Visualization,FACMC008,Deepak Sharma,deepak.sharma1628@gmail.com,YES
+BCA,4,D,BCA403,Computer Graphics and Visualization,FACMC009,Hari Sharma,hari.sharma1629@gmail.com,YES
+BCA,4,E,BCA403,Computer Graphics and Visualization,FACMC010,Karthik Banerjee,karthik.banerjee1630@gmail.com,YES
+BCA,4,A,BCA404,Artificial Intelligence Introduction,FACMC011,Geetha Krishnan,geetha.krishnan1631@yahoo.com,YES
+BCA,4,B,BCA404,Artificial Intelligence Introduction,FACMC012,Meghana Hegde,meghana.hegde1632@outlook.com,YES
+BCA,4,C,BCA404,Artificial Intelligence Introduction,FACMC013,Rakesh Bose,rakesh.bose1633@outlook.com,YES
+BCA,4,D,BCA404,Artificial Intelligence Introduction,FACMC014,Deeksha Khan,deeksha.khan1634@yahoo.com,YES
+BCA,4,E,BCA404,Artificial Intelligence Introduction,FACMC015,Sandhya Ramakrishnan,sandhya.ramakrishnan1635@yahoo.com,YES
+BCA,4,A,BCA405,Android Application Development,FACMC016,Rashmi Reddy,rashmi.reddy1636@yahoo.com,YES
+BCA,4,B,BCA405,Android Application Development,FACMC017,Yamini Bhat,yamini.bhat1637@gmail.com,YES
+BCA,4,C,BCA405,Android Application Development,FACMC018,Bhargavi Murugesh,bhargavi.murugesh1638@hotmail.com,YES
+BCA,4,D,BCA405,Android Application Development,FACMC019,Bala Desai,bala.desai1639@gmail.com,YES
+BCA,4,E,BCA405,Android Application Development,FACMC020,Bilal Ansari,bilal.ansari1640@hotmail.com,YES
+BCA,4,A,BCA406L,Advanced Web Development Lab,FACMC021,Tejas Patel,tejas.patel1641@hotmail.com,YES
+BCA,4,B,BCA406L,Advanced Web Development Lab,FACMC022,Akshay Saxena,akshay.saxena1642@outlook.com,YES
+BCA,4,C,BCA406L,Advanced Web Development Lab,FACMC023,Apoorva Ramakrishnan,apoorva.ramakrishnan1643@gmail.com,YES
+BCA,4,D,BCA406L,Advanced Web Development Lab,FACMC024,Tushar Patel,tushar.patel1644@hotmail.com,YES
+BCA,4,E,BCA406L,Advanced Web Development Lab,FACMC025,Nisha Joshi,nisha.joshi1645@hotmail.com,YES
+MCA,4,A,MCA401,Research Methodology and Technical Writing,FACMC026,Sandeep Natarajan,sandeep.natarajan1646@gmail.com,YES
+MCA,4,B,MCA401,Research Methodology and Technical Writing,FACMC027,Bharat Sivakumar,bharat.sivakumar1647@gmail.com,YES
+MCA,4,C,MCA401,Research Methodology and Technical Writing,FACMC028,Fathima Bhat,fathima.bhat1648@gmail.com,YES
+MCA,4,D,MCA401,Research Methodology and Technical Writing,FACMC029,Prasad Shaik,prasad.shaik1649@yahoo.com,YES
+MCA,4,E,MCA401,Research Methodology and Technical Writing,FACMC030,Lokesh Banerjee,lokesh.banerjee1650@hotmail.com,YES
+MCA,4,A,MCA402,Cyber Security and Ethical Hacking,FACCA001,Bharat Saxena,bharat.saxena1651@outlook.com,YES
+MCA,4,B,MCA402,Cyber Security and Ethical Hacking,FACCA002,Naga Rao,naga.rao1652@gmail.com,YES
+MCA,4,C,MCA402,Cyber Security and Ethical Hacking,FACCA003,Tushar Joshi,tushar.joshi1653@yahoo.com,YES
+MCA,4,D,MCA402,Cyber Security and Ethical Hacking,FACCA004,Ramesh Roy,ramesh.roy1654@gmail.com,YES
+MCA,4,E,MCA402,Cyber Security and Ethical Hacking,FACCA005,Tushar Das,tushar.das1655@hotmail.com,YES
+MCA,4,A,MCA403P,Major Project,FACCA006,Venkatesh Hegde,venkatesh.hegde1656@outlook.com,YES
+MCA,4,B,MCA403P,Major Project,FACCA007,Ramya Saxena,ramya.saxena1657@hotmail.com,YES
+MCA,4,C,MCA403P,Major Project,FACCA008,Tarun Saxena,tarun.saxena1658@gmail.com,YES
+MCA,4,D,MCA403P,Major Project,FACCA009,Reshma Parthasarathy,reshma.parthasarathy1659@hotmail.com,YES
+MCA,4,E,MCA403P,Major Project,FACCA010,Jagadish Saxena,jagadish.saxena1660@hotmail.com,YES
+MCA,4,A,MCA404P,Project Seminar and Viva Voce,FACCA011,Deeksha Biswas,deeksha.biswas1661@outlook.com,YES
+MCA,4,B,MCA404P,Project Seminar and Viva Voce,FACCA012,Siddharth Rajan,siddharth.rajan1662@gmail.com,YES
+MCA,4,C,MCA404P,Project Seminar and Viva Voce,FACCA013,Mohammed Khan,mohammed.khan1663@gmail.com,YES
+MCA,4,D,MCA404P,Project Seminar and Viva Voce,FACCA014,Hemalatha Shaik,hemalatha.shaik1664@hotmail.com,YES
+MCA,4,E,MCA404P,Project Seminar and Viva Voce,FACCA015,Imran Khan,imran.khan1665@hotmail.com,YES

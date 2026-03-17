@@ -1,37 +1,446 @@
 {% extends 'base.html' %}
 {% block title %}Manage Checklists | ClarifAI{% endblock %}
-{% block page_title %}Manage Checklists{% endblock %}
+{% block page_title %}Checklist Manager{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:12px;">
-    <div>
-        <h3 style="margin:0;">Checklist Records</h3>
-        <p class="chart-subtitle">Manage student action plans and completion tracking</p>
-    </div>
-    <div class="flex">
-        <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('faculty.checklists_page', status='all') }}">All</a>
-        <a class="btn {{ 'primary' if status == 'pending' else '' }}" href="{{ url_for('faculty.checklists_page', status='pending') }}">Pending</a>
-        <a class="btn {{ 'primary' if status == 'completed' else '' }}" href="{{ url_for('faculty.checklists_page', status='completed') }}">Completed</a>
-    </div>
-</div>
+<section class="faculty-shell">
+    <div class="flow-breadcrumb">Faculty <span>/</span> Checklist Manager</div>
 
-<div class="card">
-    {% for item in checklists %}
-        <div class="space-between" style="padding:10px 0; border-bottom:1px solid var(--border);">
+    <div class="space-between" style="margin-bottom:12px; align-items:flex-start;">
+        <div>
+            <h3 style="margin:0;">Checklist Manager</h3>
+            <p class="chart-subtitle">Create category-based checklist groups and track complete / partial / null progress in real time.</p>
+        </div>
+        <button class="btn primary" type="button" data-open-modal="newChecklistModal"><i data-lucide="plus"></i> New Checklist Item</button>
+    </div>
+
+    <div class="grid-3 faculty-checklist-kpis" style="margin-bottom:14px;">
+        <article class="card faculty-kpi-card" title="Total unique checklist groups created by you for students.">
+            <h3>{{ checklist_totals.total }}</h3>
+            <p>Total Checklist Groups</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-green" title="Checklist groups where every targeted student has completed all tasks.">
+            <h3>{{ checklist_totals.complete }}</h3>
+            <p>Complete</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-amber" title="Checklist groups where work has started but not fully completed by all students.">
+            <h3>{{ checklist_totals.partial }}</h3>
+            <p>Partial</p>
+        </article>
+    </div>
+
+    <div class="grid-3 faculty-checklist-kpis" style="margin-bottom:14px;">
+        <article class="card faculty-kpi-card" title="Checklist groups where no student has started any task yet.">
+            <h3>{{ checklist_totals.null }}</h3>
+            <p>Null (Not Started)</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-violet" title="Total number of student-level checklist assignments generated from your checklist groups.">
+            <h3>{{ checklist_totals.students }}</h3>
+            <p>Total Student Assignments</p>
+        </article>
+        <article class="card faculty-kpi-card" title="Number of checklist groups currently visible after applying filters.">
+            <h3>{{ checklists|length }}</h3>
+            <p>Filtered Results</p>
+        </article>
+    </div>
+
+    <form method="get" class="card" style="margin-bottom:12px;">
+        <div class="faculty-checklist-filter-grid">
             <div>
-                <strong>{{ item.title }}</strong>
-                {% if item.description %}<div>{{ item.description }}</div>{% endif %}
-                <div style="color:var(--muted);">{{ item.student.full_name }} ({{ item.student.email }}) • {{ item.created_at.strftime('%d %b %Y') }}</div>
-                <span class="badge {{ 'approved' if item.is_completed else 'under_review' }}">{{ 'Completed' if item.is_completed else 'Pending' }}</span>
+                <label class="label">Applicable Course</label>
+                <select name="course">
+                    <option value="all" {{ 'selected' if selected_course == 'ALL' else '' }}>All</option>
+                    <option value="MCA" {{ 'selected' if selected_course == 'MCA' else '' }}>MCA</option>
+                    <option value="BCA" {{ 'selected' if selected_course == 'BCA' else '' }}>BCA</option>
+                    <option value="BOTH" {{ 'selected' if selected_course == 'BOTH' else '' }}>Both</option>
+                </select>
             </div>
-            <div class="flex">
-                <a class="btn" href="{{ url_for('faculty.edit_checklist', checklist_id=item.id) }}">Edit</a>
-                <form method="post" action="{{ url_for('faculty.delete_checklist', checklist_id=item.id) }}" onsubmit="return confirm('Delete this checklist?');">
-                    <button class="btn danger" type="submit">Delete</button>
-                </form>
+            <div>
+                <label class="label">Category</label>
+                <select name="category">
+                    <option value="all" {{ 'selected' if selected_category == 'all' else '' }}>All</option>
+                    {% for cat in category_options %}
+                        <option value="{{ cat }}" {{ 'selected' if selected_category == cat else '' }}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Semester</label>
+                <select name="semester">
+                    <option value="all" {{ 'selected' if selected_semester == 'all' else '' }}>All</option>
+                    {% for sem in semester_options %}
+                        <option value="{{ sem }}" {{ 'selected' if selected_semester == sem else '' }}>Semester {{ sem }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Section</label>
+                <select name="section">
+                    <option value="all" {{ 'selected' if selected_section == 'all' else '' }}>All</option>
+                    {% for sec in section_options %}
+                        <option value="{{ sec }}" {{ 'selected' if selected_section == sec else '' }}>Section {{ sec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex" style="justify-content:flex-end; gap:8px;">
+                <button class="btn primary" type="submit">Apply Filters</button>
+                <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Reset</a>
             </div>
         </div>
-    {% else %}
-        <p>No checklist items found.</p>
-    {% endfor %}
+    </form>
+
+    <div class="checklist-tabs-row" style="margin-bottom:14px;">
+        <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('faculty.checklists_page', status='all', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">All</a>
+        <a class="btn {{ 'primary' if status == 'null' else '' }}" href="{{ url_for('faculty.checklists_page', status='null', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">Null</a>
+        <a class="btn {{ 'primary' if status == 'partial' else '' }}" href="{{ url_for('faculty.checklists_page', status='partial', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">Partial</a>
+        <a class="btn {{ 'primary' if status == 'complete' else '' }}" href="{{ url_for('faculty.checklists_page', status='complete', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">Complete</a>
+    </div>
+
+    <article class="card table-wrap">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Checklist Groups</h3>
+            <span class="chart-subtitle">{{ checklists|length }} records</span>
+        </div>
+        <table class="table faculty-checklist-table">
+            <thead>
+                <tr>
+                    <th class="col-checklist">Checklist</th>
+                    <th class="col-category">Category</th>
+                    <th class="col-applicable">Applicable To</th>
+                    <th class="col-subject optional-lg">Subject</th>
+                    <th class="col-due">Due Date</th>
+                    <th class="col-student-progress">Student Progress</th>
+                    <th class="col-task-progress">Task Progress</th>
+                    <th class="col-attachment optional-xl">Attachment</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in checklists %}
+                <tr>
+                    <td class="col-checklist">
+                        <div class="faculty-task-cell">
+                            <i data-lucide="clipboard-list"></i>
+                            <div>
+                                <strong>{{ item.title }}</strong>
+                                {% if item.description %}
+                                    <p>{{ item.description[:88] }}{% if item.description|length > 88 %}...{% endif %}</p>
+                                {% endif %}
+                                <small>Priority: {{ item.priority|title }} · Students: {{ item.students }}{% if item.completion_locked %} · Finalized{% endif %}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="col-category">{{ item.category }}</td>
+                    <td class="col-applicable">
+                        <small>
+                            Course: {{ item.target_course }}<br>
+                            Semester: {{ item.target_semester|upper }}<br>
+                            Section: {{ item.target_section|upper }}
+                        </small>
+                    </td>
+                    <td class="col-subject optional-lg">
+                        <span class="faculty-subject-text {{ 'muted' if item.subject == 'No specific subject' else '' }}">{{ item.subject }}</span>
+                    </td>
+                    <td class="col-due due-cell {{ item.due_state }}">{{ item.due_label }}</td>
+                    <td class="col-student-progress">
+                        <div class="checklist-ratio-block">
+                            <small><strong>{{ item.complete_count }}</strong> complete / <strong>{{ item.partial_count }}</strong> partial / <strong>{{ item.null_count }}</strong> null</small>
+                            <div class="checklist-ratio-bar">
+                                <span class="ratio-complete" style="width:{{ item.complete_ratio }}%"></span>
+                                <span class="ratio-partial" style="width:{{ item.partial_ratio }}%"></span>
+                                <span class="ratio-null" style="width:{{ item.null_ratio }}%"></span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="col-task-progress">
+                        <strong>{{ item.task_progress_percent }}%</strong>
+                        <div class="progress" style="margin-top:6px;"><span style="width:{{ item.task_progress_percent }}%"></span></div>
+                    </td>
+                    <td class="col-attachment optional-xl">
+                        {% if item.attachment and item.attachment.kind == 'file' and item.attachment.path %}
+                            <a class="btn subtle-link" href="{{ url_for('static', filename=item.attachment.path) }}" target="_blank" rel="noopener">{{ item.attachment.name or 'Open File' }}</a>
+                        {% elif item.attachment and item.attachment.url %}
+                            <a class="btn subtle-link" href="{{ item.attachment.url }}" target="_blank" rel="noopener">Open Link</a>
+                        {% else %}
+                            <span class="chart-subtitle">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-actions">
+                        <div class="faculty-action-row">
+                            <a class="icon-btn" href="{{ url_for('faculty.edit_checklist', checklist_id=item.id) }}" title="Edit"><i data-lucide="pencil"></i></a>
+                            <form method="post" action="{{ url_for('faculty.delete_checklist', checklist_id=item.id) }}" onsubmit="return confirm('Delete this checklist?');">
+                                <button class="icon-btn" type="submit" title="Delete"><i data-lucide="trash-2"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="9">No checklist groups found for current filters.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+
+<div class="modal knowledge-entry-modal" id="newChecklistModal">
+    <div class="modal-card solid-modal checklist-modal-card">
+        <div class="space-between" style="margin-bottom:10px;">
+            <h3 style="margin:0;">New Checklist Item</h3>
+            <button class="icon-btn" type="button" data-close-modal><i data-lucide="x"></i></button>
+        </div>
+
+        <form method="post" action="{{ url_for('faculty.create_checklist') }}" enctype="multipart/form-data">
+            <input type="hidden" name="redirect_target" value="faculty.checklists_page">
+
+            <label class="label">Task Title *</label>
+            <input type="text" name="title" placeholder="e.g. Review updated lecture notes" required>
+
+            <label class="label">Description</label>
+            <textarea name="description" placeholder="Provide detailed instructions for students..."></textarea>
+
+            <label class="label">Checklist Items * (minimum 2, maximum 10)</label>
+            <div id="createChecklistItems" class="checklist-input-stack" data-max-items="10" data-min-items="2">
+                <div class="checklist-input-row">
+                    <span class="checklist-input-label">Checklist-1</span>
+                    <input type="text" name="checklist_item_1" placeholder="Enter checklist item" required>
+                </div>
+                <div class="checklist-input-row">
+                    <span class="checklist-input-label">Checklist-2</span>
+                    <input type="text" name="checklist_item_2" placeholder="Enter checklist item" required>
+                </div>
+            </div>
+            <button type="button" class="btn" id="addChecklistItemBtn" style="margin-top:8px;">+ Add Checklist Item</button>
+
+            <div class="grid-3">
+                <div>
+                    <label class="label">Category *</label>
+                    <select name="category" required>
+                        {% for category in category_options %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Applicable Course *</label>
+                    <select name="target_course" id="createTargetCourse" required>
+                        <option value="BOTH">Both MCA and BCA</option>
+                        <option value="MCA">Only MCA</option>
+                        <option value="BCA">Only BCA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Subject</label>
+                    <select name="subject" id="createSubjectSelect">
+                        <option value="No specific subject">No specific subject</option>
+                    </select>
+                    <small class="chart-subtitle" style="display:block; margin-top:4px;">Choose MCA/BCA to select course-specific subjects.</small>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="label">Priority</label>
+                    <select name="priority">
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Due Date *</label>
+                    <input type="date" name="due_date" required>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label class="label">Semester</label>
+                    <select name="target_semester" id="createTargetSemester">
+                        <option value="all">All Semesters</option>
+                        {% for sem in semester_options %}
+                            <option value="{{ sem }}">Semester {{ sem }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Section</label>
+                    <select name="target_section" id="createTargetSection">
+                        <option value="all">All Sections</option>
+                        {% for sec in section_options %}
+                            <option value="{{ sec }}">Section {{ sec }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <label class="label">Attach File (PDF/DOC/etc up to 20MB)</label>
+            <input type="file" name="attachment_file" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,.csv,.zip,.rar,.png,.jpg,.jpeg">
+
+            <label class="label">Or Paste Drive / External Link</label>
+            <input type="url" name="attachment_link" placeholder="https://drive.google.com/...">
+            <small class="chart-subtitle" style="display:block; margin-top:4px;">Audio/video uploads are blocked. Use Drive links for media or files larger than 20MB.</small>
+
+            <div class="flex" style="margin-top:14px; justify-content:flex-end;">
+                <button class="btn" type="button" data-close-modal>Cancel</button>
+                <button class="btn primary" type="submit"><i data-lucide="notebook-pen"></i> Create Item</button>
+            </div>
+        </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const subjectCatalog = {{ subject_catalog_by_course | tojson }};
+    const semesterByCourse = {{ semester_options_by_course | tojson }};
+    const sectionByCourse = {{ section_options_by_course | tojson }};
+    const courseSelect = document.getElementById('createTargetCourse');
+    const subjectSelect = document.getElementById('createSubjectSelect');
+    const semesterSelect = document.getElementById('createTargetSemester');
+    const sectionSelect = document.getElementById('createTargetSection');
+    const addChecklistBtn = document.getElementById('addChecklistItemBtn');
+    const checklistWrap = document.getElementById('createChecklistItems');
+
+    if (courseSelect && subjectSelect) {
+        const noSpecific = 'No specific subject';
+
+        const repopulateSimpleSelect = (selectNode, options, selectedValue, defaultLabel) => {
+            if (!selectNode) {
+                return;
+            }
+            selectNode.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = 'all';
+            defaultOption.textContent = defaultLabel;
+            selectNode.appendChild(defaultOption);
+
+            options.forEach((value) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = selectNode === semesterSelect ? `Semester ${value}` : `Section ${value}`;
+                selectNode.appendChild(option);
+            });
+
+            if ([...selectNode.options].some((option) => option.value === selectedValue)) {
+                selectNode.value = selectedValue;
+            } else {
+                selectNode.value = 'all';
+            }
+        };
+
+        const repopulateSubjects = () => {
+            const selectedCourse = (courseSelect.value || 'BOTH').toUpperCase();
+            const subjects = selectedCourse === 'MCA' || selectedCourse === 'BCA'
+                ? (subjectCatalog[selectedCourse] || [])
+                : [];
+            const previous = subjectSelect.value || noSpecific;
+            const previousSemester = semesterSelect ? semesterSelect.value : 'all';
+            const previousSection = sectionSelect ? sectionSelect.value : 'all';
+
+            subjectSelect.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = noSpecific;
+            defaultOption.textContent = noSpecific;
+            subjectSelect.appendChild(defaultOption);
+
+            subjects.forEach((subject) => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                subjectSelect.appendChild(option);
+            });
+
+            if ([...subjectSelect.options].some((option) => option.value === previous)) {
+                subjectSelect.value = previous;
+            } else {
+                subjectSelect.value = noSpecific;
+            }
+
+            const bothOption = [...courseSelect.options].find((option) => option.value === 'BOTH');
+            if (bothOption) {
+                const hasSpecificSubject = subjectSelect.value !== noSpecific;
+                bothOption.disabled = hasSpecificSubject;
+                if (hasSpecificSubject && courseSelect.value === 'BOTH') {
+                    courseSelect.value = selectedCourse === 'BOTH' ? 'MCA' : selectedCourse;
+                }
+            }
+
+            const semesterOptions = semesterByCourse[selectedCourse] || semesterByCourse.BOTH || [];
+            const sectionOptions = sectionByCourse[selectedCourse] || sectionByCourse.BOTH || [];
+            repopulateSimpleSelect(semesterSelect, semesterOptions, previousSemester, 'All Semesters');
+            repopulateSimpleSelect(sectionSelect, sectionOptions, previousSection, 'All Sections');
+        };
+
+        courseSelect.addEventListener('change', repopulateSubjects);
+        subjectSelect.addEventListener('change', () => {
+            const bothOption = [...courseSelect.options].find((option) => option.value === 'BOTH');
+            if (!bothOption) {
+                return;
+            }
+            const hasSpecificSubject = subjectSelect.value !== noSpecific;
+            bothOption.disabled = hasSpecificSubject;
+            if (hasSpecificSubject && courseSelect.value === 'BOTH') {
+                courseSelect.value = 'MCA';
+                repopulateSubjects();
+                subjectSelect.value = noSpecific;
+            }
+        });
+
+        repopulateSubjects();
+    }
+
+    if (addChecklistBtn && checklistWrap) {
+        const maxItems = Number(checklistWrap.dataset.maxItems || 10);
+        const minItems = Number(checklistWrap.dataset.minItems || 2);
+
+        const refreshRows = () => {
+            const rows = [...checklistWrap.querySelectorAll('.checklist-input-row')];
+            rows.forEach((row, index) => {
+                const serial = index + 1;
+                const label = row.querySelector('.checklist-input-label');
+                const input = row.querySelector('input');
+                const removeBtn = row.querySelector('.checklist-remove-item');
+                if (label) {
+                    label.textContent = `Checklist-${serial}`;
+                }
+                if (input) {
+                    input.name = `checklist_item_${serial}`;
+                    input.required = serial <= minItems;
+                }
+                if (removeBtn) {
+                    removeBtn.style.display = rows.length > minItems ? 'inline-flex' : 'none';
+                }
+            });
+            addChecklistBtn.disabled = rows.length >= maxItems;
+        };
+
+        checklistWrap.addEventListener('click', (event) => {
+            const removeBtn = event.target.closest('.checklist-remove-item');
+            if (!removeBtn) {
+                return;
+            }
+            const rows = checklistWrap.querySelectorAll('.checklist-input-row');
+            if (rows.length <= minItems) {
+                return;
+            }
+            removeBtn.closest('.checklist-input-row')?.remove();
+            refreshRows();
+        });
+
+        addChecklistBtn.addEventListener('click', () => {
+            const rows = checklistWrap.querySelectorAll('.checklist-input-row');
+            if (rows.length >= maxItems) {
+                return;
+            }
+            const row = document.createElement('div');
+            row.className = 'checklist-input-row';
+            row.innerHTML = '<span class="checklist-input-label"></span><input type="text" placeholder="Enter checklist item"><button type="button" class="btn checklist-remove-item">Remove</button>';
+            checklistWrap.appendChild(row);
+            refreshRows();
+        });
+
+        refreshRows();
+    }
+})();
+</script>
 {% endblock %}

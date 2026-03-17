@@ -2,32 +2,155 @@
 {% block title %}My Checklists | ClarifAI{% endblock %}
 {% block page_title %}My Checklists{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:12px;">
-    <div>
-        <h3 style="margin:0;">Assigned Checklists</h3>
-        <p class="chart-subtitle">Monitor task completion and deadlines from faculty</p>
-    </div>
-    <div class="flex">
-        <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('student.my_checklists', status='all') }}">All</a>
-        <a class="btn {{ 'primary' if status == 'pending' else '' }}" href="{{ url_for('student.my_checklists', status='pending') }}">Pending</a>
-        <a class="btn {{ 'primary' if status == 'completed' else '' }}" href="{{ url_for('student.my_checklists', status='completed') }}">Completed</a>
-    </div>
-</div>
+<section class="student-flow-shell">
+    <div class="flow-breadcrumb">Student <span>/</span> My Checklist</div>
+    <h2 style="margin:0;">My Checklist</h2>
+    <p class="chart-subtitle">Track each checklist task using complete / partial / null progress.</p>
 
-<div class="card">
-    {% for item in checklists %}
-        <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=item.id) }}" class="space-between" style="padding:10px 0; border-bottom:1px solid var(--border);">
+    <div class="card checklist-summary-card">
+        <div class="space-between">
             <div>
-                <strong>{{ item.title }}</strong>
-                {% if item.description %}<div>{{ item.description }}</div>{% endif %}
-                <div style="color:var(--muted);">Assigned by {{ item.faculty.full_name }} • {{ item.created_at.strftime('%d %b %Y') }}</div>
+                <h3 style="margin:0;">Overall Progress</h3>
+                <p class="chart-subtitle">{{ completed_count }} complete · {{ partial_count }} partial · {{ null_count }} null</p>
             </div>
-            <button class="btn {{ 'success' if item.is_completed else '' }}" type="submit">
-                {{ 'Completed' if item.is_completed else 'Mark Done' }}
-            </button>
-        </form>
-    {% else %}
-        <p>No checklist items found.</p>
-    {% endfor %}
-</div>
+            <div class="checklist-rate">{{ progress_percent }}%</div>
+        </div>
+        <div class="progress" style="margin-top:10px;"><span style="width:{{ progress_percent }}%"></span></div>
+        <div class="checklist-kpis">
+            <span><strong>{{ total_count }}</strong> Total</span>
+            <span><strong>{{ null_count }}</strong> Null</span>
+            <span><strong>{{ partial_count }}</strong> Partial</span>
+            <span><strong>{{ completed_count }}</strong> Complete</span>
+            <span><strong>{{ overdue_count }}</strong> Overdue</span>
+        </div>
+    </div>
+
+    <form method="get" class="card student-checklist-filter-card">
+        <div class="student-checklist-filter-grid">
+            <div>
+                <label class="label">Course</label>
+                <select name="course">
+                    {% for option in course_options %}
+                        <option value="{{ option }}" {{ 'selected' if selected_course == option else '' }}>{{ 'Both (Common Checklists)' if option == 'BOTH' else option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Category</label>
+                <select name="category">
+                    <option value="all" {{ 'selected' if selected_category == 'all' else '' }}>All</option>
+                    {% for option in category_options %}
+                        <option value="{{ option }}" {{ 'selected' if selected_category == option else '' }}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Semester</label>
+                <select name="semester">
+                    <option value="all" {{ 'selected' if selected_semester == 'all' else '' }}>All</option>
+                    {% for sem in semester_options %}
+                        <option value="{{ sem }}" {{ 'selected' if selected_semester == sem else '' }}>Semester {{ sem }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Section</label>
+                <select name="section">
+                    <option value="all" {{ 'selected' if selected_section == 'all' else '' }}>All</option>
+                    {% for sec in section_options %}
+                        <option value="{{ sec }}" {{ 'selected' if selected_section == sec else '' }}>Section {{ sec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="student-checklist-filter-actions">
+                <button class="btn primary" type="submit">Apply</button>
+                <a class="btn" href="{{ url_for('student.my_checklists') }}">Reset</a>
+            </div>
+        </div>
+    </form>
+
+    <div class="checklist-tabs-row">
+        <a class="btn {{ 'primary' if status == 'all' else '' }}" href="{{ url_for('student.my_checklists', status='all', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">All ({{ total_count }})</a>
+        <a class="btn {{ 'primary' if status == 'null' else '' }}" href="{{ url_for('student.my_checklists', status='null', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">Null ({{ null_count }})</a>
+        <a class="btn {{ 'primary' if status == 'partial' else '' }}" href="{{ url_for('student.my_checklists', status='partial', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">Partial ({{ partial_count }})</a>
+        <a class="btn {{ 'primary' if status == 'complete' else '' }}" href="{{ url_for('student.my_checklists', status='complete', course=selected_course, category=selected_category, semester=selected_semester, section=selected_section) }}">Complete ({{ completed_count }})</a>
+    </div>
+
+    <div class="checklist-card-list">
+        {% for entry in checklist_cards %}
+        <details class="card checklist-item-card" {% if loop.first %}open{% endif %}>
+            <summary>
+                <div class="checklist-summary-left">
+                    <i data-lucide="{{ 'check-circle-2' if entry.item.is_completed else 'circle' }}"></i>
+                    <div>
+                        <strong>{{ entry.item.title }}</strong>
+                        <div class="checklist-meta-row">
+                            <span class="priority-tag {{ entry.priority }}">{{ entry.priority }} priority</span>
+                            <span>{{ entry.category }}</span>
+                            <span>{{ entry.subject }}</span>
+                            <span class="due-tag {{ entry.due_state }}">{{ entry.due_label }}</span>
+                            <span class="due-tag {{ entry.state }}">{{ entry.state|upper }}</span>
+                            {% if entry.completion_locked %}<span class="due-tag complete">FINALIZED</span>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <i data-lucide="chevron-down"></i>
+            </summary>
+
+            <div class="checklist-body">
+                {% if entry.description %}
+                    <p>{{ entry.description }}</p>
+                {% endif %}
+                <p class="chart-subtitle">{{ entry.target_course }} · Semester {{ entry.target_semester|upper }} · Section {{ entry.target_section|upper }}</p>
+                <div class="progress" style="margin:8px 0;"><span style="width:{{ (entry.completed_tasks / (entry.total_tasks if entry.total_tasks else 1) * 100)|round(0, 'floor') }}%"></span></div>
+                <p class="chart-subtitle">Progress: {{ entry.completed_tasks }}/{{ entry.total_tasks }} tasks done</p>
+
+                <div class="checklist-task-list">
+                    {% for task in entry.task_rows %}
+                        <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=entry.item.id) }}" class="checklist-task-row">
+                            <input type="hidden" name="task_index" value="{{ task.index }}">
+                            <input type="hidden" name="status" value="{{ status }}">
+                            <input type="hidden" name="course" value="{{ selected_course }}">
+                            <input type="hidden" name="category" value="{{ selected_category }}">
+                            <input type="hidden" name="semester" value="{{ selected_semester }}">
+                            <input type="hidden" name="section" value="{{ selected_section }}">
+                            <input type="hidden" name="redirect_target" value="student.my_checklists">
+                            <input type="hidden" name="action" value="toggle_task">
+                            <label>
+                                <input class="theme-check" type="checkbox" {% if task.is_done %}checked{% endif %} {% if entry.completion_locked %}disabled{% endif %} onchange="this.form.submit()">
+                                <span>{{ task.text }}</span>
+                            </label>
+                        </form>
+                    {% endfor %}
+                </div>
+
+                {% if entry.can_mark_complete %}
+                    <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=entry.item.id) }}" onsubmit="return confirm('This action cannot be undone. Once marked as completed, this checklist cannot be changed. Continue?');" style="margin-top:10px;">
+                        <input type="hidden" name="status" value="{{ status }}">
+                        <input type="hidden" name="course" value="{{ selected_course }}">
+                        <input type="hidden" name="category" value="{{ selected_category }}">
+                        <input type="hidden" name="semester" value="{{ selected_semester }}">
+                        <input type="hidden" name="section" value="{{ selected_section }}">
+                        <input type="hidden" name="redirect_target" value="student.my_checklists">
+                        <input type="hidden" name="action" value="mark_complete">
+                        <button type="submit" class="btn primary checklist-complete-btn"><i data-lucide="shield-check"></i> {{ 'Finalize as Completed' if entry.state == 'complete' else 'Mark as Completed' }}</button>
+                    </form>
+                {% elif entry.completion_locked %}
+                    <p class="chart-subtitle" style="margin-top:10px; color:#34d399;">This checklist is finalized and cannot be edited.</p>
+                {% endif %}
+
+                {% if entry.attachment and entry.attachment.kind == 'file' and entry.attachment.path %}
+                    <p style="margin:10px 0 0;"><a class="btn subtle-link" href="{{ url_for('static', filename=entry.attachment.path) }}" target="_blank" rel="noopener">Open Attachment: {{ entry.attachment.name or 'File' }}</a></p>
+                {% elif entry.attachment and entry.attachment.url %}
+                    <p style="margin:10px 0 0;"><a class="btn subtle-link" href="{{ entry.attachment.url }}" target="_blank" rel="noopener">Open Resource Link</a></p>
+                {% endif %}
+
+                <p class="chart-subtitle checklist-assigned-meta">Assigned by {{ entry.item.faculty.full_name }} · {{ entry.item.created_at|ist_datetime('%d %b %Y') }} · Open {{ entry.days_open }} day(s)</p>
+            </div>
+        </details>
+        {% else %}
+            <div class="card"><p>No checklist items found for this filter.</p></div>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}

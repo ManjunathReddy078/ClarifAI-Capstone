@@ -2,38 +2,438 @@
 {% block title %}Submit Feedback | ClarifAI{% endblock %}
 {% block page_title %}Submit Feedback{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:12px;">
-    <div>
-        <h3 style="margin:0;">Submit Feedback</h3>
-        <p class="chart-subtitle">Provide constructive, actionable feedback for academic improvement</p>
+<section class="student-flow-shell">
+    <div class="student-flow-head">
+        <div class="flow-breadcrumb">Student <span>/</span> Submit Feedback</div>
+        <h2>Submit Feedback</h2>
+        <p>Provide structured, constructive feedback to help improve academic quality.</p>
     </div>
-</div>
 
-<div class="card">
-    <form method="post" action="{{ url_for('student.submit_feedback') }}">
-        <label class="label">Faculty</label>
-        <select name="faculty_id" required>
-            <option value="">Select faculty</option>
-            {% for faculty in faculty_list %}
-                <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.faculty_id }})</option>
-            {% endfor %}
-        </select>
+    {% if success_payload %}
+    <div class="card feedback-success-card">
+        <div class="feedback-success-icon"><i data-lucide="brain"></i></div>
+        <h3>Feedback Submitted for Review</h3>
+        <p>
+            {% if success_payload.delivery == 'holding' and success_payload.status == 'holding' %}
+                Your feedback is safely stored in Admin Holding and will be delivered to the assigned faculty dashboard once that faculty account is registered.
+            {% elif success_payload.delivery == 'holding' and success_payload.status == 'under_review' %}
+                Your feedback is currently in moderation. After admin approval, it will move to Admin Holding and then auto-deliver when the assigned faculty registers.
+            {% elif success_payload.status == 'approved' %}
+                Your feedback was classified as positive and is now visible to faculty.
+            {% else %}
+                Our NLP system detected {{ success_payload.sentiment }} sentiment. Your feedback has been routed to the moderation queue for review.
+            {% endif %}
+        </p>
+        <div class="feedback-success-pill">
+            NLP: {{ success_payload.sentiment }} ({{ success_payload.confidence }}% confidence)
+        </div>
+        <div class="feedback-success-actions">
+            <a class="btn" href="{{ url_for('student.reviews') }}">View My Feedback</a>
+            <a class="btn primary" href="{{ url_for('student.submit_feedback_page') }}">Submit Another</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="card flow-info-card">
+        <p><i data-lucide="info"></i> <strong>Sentiment-Aware Submission</strong><br>
+        Positive feedback is auto-approved. Neutral/negative feedback enters moderation for review before reaching faculty.</p>
+    </div>
 
-        <label class="label">Subject / Course</label>
-        <input type="text" name="subject" required>
+    <div class="flow-steps">
+        <span class="active" data-step-indicator="1">Subject & Context</span>
+        <span data-step-indicator="2">Feedback Content</span>
+    </div>
 
-        <label class="label">Semester</label>
-        <input type="text" name="semester" required>
+    <form method="post" action="{{ url_for('student.submit_feedback') }}" class="card feedback-wizard" id="feedbackWizardForm">
+        <input type="hidden" name="context" value="fullpage">
+        <input type="hidden" name="reason" id="reasonValue" value="">
 
-        <label class="label">Reason</label>
-        <input type="text" name="reason" required>
+        <div class="feedback-step" data-step="1">
+            <h3>Step 1: Subject & Context</h3>
+            <div class="grid-2">
+                <div>
+                    <label class="label">Subject *</label>
+                    <select name="course_code" id="courseCodeSelect" required>
+                        <option value="">Select subject</option>
+                        {% for item in subject_catalog %}
+                            <option value="{{ item.course_code }}" data-semester="{{ item.semester }}">
+                                {{ item.subject_name }} ({{ item.course_code }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Faculty Member *</label>
+                    <select name="faculty_id" id="facultySelect" required>
+                        <option value="">Select faculty</option>
+                        {% for faculty in faculty_list %}
+                            <option value="{{ faculty.id }}">{{ faculty.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
 
-        <label class="label">Feedback</label>
-        <textarea name="feedback_text" required></textarea>
+            <div class="grid-2">
+                <div>
+                    <label class="label">Semester</label>
+                    <input type="text" id="semesterPreview" value="{{ student.course }} - Sem {{ current_semester_display }}" readonly>
+                </div>
+                <div>
+                    <label class="label">Section</label>
+                    <input type="text" value="Section {{ student.section if student and student.section else 'A' }}" readonly>
+                </div>
+            </div>
 
-        <div style="margin-top:14px;">
-            <button class="btn primary" type="submit">Submit</button>
+            <label class="label">Class Session Date/Time *</label>
+            <input type="datetime-local" name="class_session_at" id="classSessionInput" max="{{ ist_now_iso }}" data-review-session-time required>
+            <small class="chart-subtitle" style="display:block; margin-top:6px;">Allowed range: past/current date, Monday-Saturday only, 08:00 AM to 05:00 PM (IST).</small>
+
+            <label class="label">Reason Category *</label>
+            <div class="reason-chip-grid" id="reasonChipGrid">
+                {% for tag in fixed_feedback_tags[:6] %}
+                    <button type="button" class="reason-chip" data-reason="{{ tag }}">{{ tag.replace('_', ' ')|title }}</button>
+                {% endfor %}
+            </div>
+
+            <div class="step-actions">
+                <button class="btn primary" type="button" data-next-step>Continue <i data-lucide="chevron-right"></i></button>
+            </div>
+        </div>
+
+        <div class="feedback-step" data-step="2" style="display:none;">
+            <h3>Step 2: Write Your Feedback</h3>
+            <label class="label">Feedback Text * (min. 50 characters) <span id="feedbackCharCount">0 chars</span></label>
+            <textarea name="feedback_text" id="feedbackText" minlength="50" required></textarea>
+
+            <div class="sentiment-preview-row">
+                <button class="btn" type="button" id="sentimentPreviewBtn"><i data-lucide="brain"></i> Preview NLP Sentiment</button>
+                <span class="sentiment-preview-pill" id="sentimentPreviewPill">No preview yet</span>
+            </div>
+
+            <label class="label">Feedback Tags *</label>
+            <div class="reason-chip-grid" id="tagChipGrid">
+                {% for tag in fixed_feedback_tags %}
+                    <button type="button" class="reason-chip tag-chip" data-tag="{{ tag }}">{{ tag.replace('_', ' ')|title }}</button>
+                {% endfor %}
+            </div>
+            <div id="tagInputsWrap"></div>
+
+            <div class="submission-summary" id="submissionSummary"></div>
+
+            <div class="step-actions dual">
+                <button class="btn" type="button" data-prev-step><i data-lucide="arrow-left"></i> Back</button>
+                <button class="btn primary" type="submit"><i data-lucide="send"></i> Submit Feedback</button>
+            </div>
         </div>
     </form>
-</div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const form = document.getElementById('feedbackWizardForm');
+    if (!form) {
+        return;
+    }
+
+    const steps = Array.from(form.querySelectorAll('.feedback-step'));
+    const indicators = Array.from(document.querySelectorAll('[data-step-indicator]'));
+    const reasonInput = document.getElementById('reasonValue');
+    const reasonButtons = Array.from(document.querySelectorAll('[data-reason]'));
+    const tagButtons = Array.from(document.querySelectorAll('[data-tag]'));
+    const tagInputsWrap = document.getElementById('tagInputsWrap');
+    const feedbackText = document.getElementById('feedbackText');
+    const feedbackCharCount = document.getElementById('feedbackCharCount');
+    const previewButton = document.getElementById('sentimentPreviewBtn');
+    const previewPill = document.getElementById('sentimentPreviewPill');
+    const submissionSummary = document.getElementById('submissionSummary');
+    const courseCodeSelect = document.getElementById('courseCodeSelect');
+    const facultySelect = document.getElementById('facultySelect');
+    const classSessionInput = document.getElementById('classSessionInput');
+    const semesterPreview = document.getElementById('semesterPreview');
+    const subjectFacultyMap = {{ subject_faculty_map|tojson }};
+    const allFacultyOptions = {{ faculty_options|tojson }};
+    const istNowIso = '{{ ist_now_iso }}';
+    const istToday = istNowIso.split('T')[0];
+    const selectedTags = new Set();
+    let previousReason = '';
+    let currentStep = 1;
+
+    const upsertFacultyOptions = (rows) => {
+        if (!facultySelect) {
+            return;
+        }
+
+        const nextRows = Array.isArray(rows) ? rows : [];
+        facultySelect.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = nextRows.length ? 'Select faculty' : 'No assigned faculty available';
+        facultySelect.appendChild(placeholder);
+
+        nextRows.forEach((entry) => {
+            const option = document.createElement('option');
+            option.value = String(entry.id);
+            option.textContent = entry.faculty_id
+                ? `${entry.full_name} (${entry.faculty_id})`
+                : entry.full_name;
+            facultySelect.appendChild(option);
+        });
+
+        if (nextRows.length === 1) {
+            facultySelect.value = String(nextRows[0].id);
+        }
+    };
+
+    const validateClassSessionDateTime = () => {
+        if (!classSessionInput || !classSessionInput.value) {
+            return true;
+        }
+
+        const [datePart, timePart] = classSessionInput.value.split('T');
+        if (!datePart || !timePart) {
+            classSessionInput.setCustomValidity('Please provide a valid class session date and time.');
+            return false;
+        }
+
+        if (datePart > istToday) {
+            classSessionInput.setCustomValidity('Class session date cannot be in the future.');
+            return false;
+        }
+
+        const selectedDay = new Date(`${datePart}T00:00:00`).getDay();
+        if (selectedDay === 0) {
+            classSessionInput.setCustomValidity('Class session date cannot be on Sunday.');
+            return false;
+        }
+
+        const [hourText, minuteText] = timePart.split(':');
+        const hour = Number.parseInt(hourText || '0', 10);
+        const minute = Number.parseInt(minuteText || '0', 10);
+        if (hour < 8 || hour > 17 || (hour === 17 && minute > 0)) {
+            classSessionInput.setCustomValidity('Class session time must be between 08:00 AM and 05:00 PM (IST).');
+            return false;
+        }
+
+        classSessionInput.setCustomValidity('');
+        return true;
+    };
+
+    const validateStepFields = (stepNumber) => {
+        if (stepNumber === 1) {
+            const requiredFields = [courseCodeSelect, facultySelect, classSessionInput];
+            for (const field of requiredFields) {
+                if (!field) {
+                    continue;
+                }
+                if (field === classSessionInput && !validateClassSessionDateTime()) {
+                    field.reportValidity();
+                    return false;
+                }
+                if (!field.checkValidity()) {
+                    field.reportValidity();
+                    return false;
+                }
+            }
+
+            if (!reasonInput.value) {
+                alert('Please select a reason category.');
+                return false;
+            }
+            return true;
+        }
+
+        if (stepNumber === 2) {
+            if (!feedbackText || !feedbackText.checkValidity()) {
+                feedbackText?.reportValidity();
+                return false;
+            }
+            if (!selectedTags.size) {
+                alert('Please select at least one feedback tag.');
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    const syncTagInputs = () => {
+        tagInputsWrap.innerHTML = '';
+        selectedTags.forEach((tag) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'feedback_tags';
+            input.value = tag;
+            tagInputsWrap.appendChild(input);
+        });
+    };
+
+    const renderSummary = () => {
+        const subjectText = courseCodeSelect?.selectedOptions?.[0]?.textContent?.trim() || '-';
+        const reasonText = reasonInput?.value ? reasonInput.value.replaceAll('_', ' ') : '-';
+        const chars = feedbackText?.value?.length || 0;
+        submissionSummary.innerHTML = `
+            <h4>Submission Summary</h4>
+            <p><strong>Subject:</strong> ${subjectText}</p>
+            <p><strong>Reason:</strong> ${reasonText}</p>
+            <p><strong>Characters:</strong> ${chars}</p>
+            <p><strong>Selected Tags:</strong> ${selectedTags.size || 0}</p>
+        `;
+    };
+
+    const showStep = (stepNumber) => {
+        currentStep = stepNumber;
+        steps.forEach((step) => {
+            step.style.display = Number(step.dataset.step) === stepNumber ? 'block' : 'none';
+        });
+        indicators.forEach((indicator) => {
+            indicator.classList.toggle('active', Number(indicator.dataset.stepIndicator) === stepNumber);
+        });
+        renderSummary();
+    };
+
+    const sentimentPreview = async () => {
+        const text = (feedbackText?.value || '').trim();
+        if (!text) {
+            previewPill.textContent = 'Enter feedback text first';
+            return;
+        }
+
+        previewPill.textContent = 'Analyzing...';
+        try {
+            const response = await fetch('{{ url_for("student.sentiment_preview") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+
+            if (!response.ok) {
+                throw new Error('Sentiment preview failed');
+            }
+
+            const result = await response.json();
+            const label = (result.sentiment || 'neutral').toString().toLowerCase();
+            const confidence = Number.parseInt(result.confidence || '0', 10) || 0;
+            previewPill.textContent = `Detected: ${label.charAt(0).toUpperCase() + label.slice(1)} (${confidence}% confidence)`;
+        } catch (_err) {
+            previewPill.textContent = 'Preview unavailable right now';
+        }
+    };
+
+    reasonButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            reasonButtons.forEach((item) => item.classList.remove('active'));
+            button.classList.add('active');
+
+            if (previousReason && selectedTags.has(previousReason)) {
+                selectedTags.delete(previousReason);
+                tagButtons.forEach((tagButton) => {
+                    if (tagButton.dataset.tag === previousReason) {
+                        tagButton.classList.remove('active');
+                    }
+                });
+            }
+
+            reasonInput.value = button.dataset.reason || '';
+            previousReason = reasonInput.value;
+            selectedTags.add(reasonInput.value);
+            tagButtons.forEach((tagButton) => {
+                if (tagButton.dataset.tag === reasonInput.value) {
+                    tagButton.classList.add('active');
+                }
+            });
+            syncTagInputs();
+            renderSummary();
+        });
+    });
+
+    tagButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const tag = button.dataset.tag || '';
+            if (!tag) {
+                return;
+            }
+            if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+                button.classList.remove('active');
+            } else {
+                selectedTags.add(tag);
+                button.classList.add('active');
+            }
+            syncTagInputs();
+            renderSummary();
+        });
+    });
+
+    if (feedbackText && feedbackCharCount) {
+        feedbackText.addEventListener('input', () => {
+            feedbackCharCount.textContent = `${feedbackText.value.length} chars`;
+            renderSummary();
+        });
+    }
+
+    if (previewButton) {
+        previewButton.addEventListener('click', sentimentPreview);
+    }
+
+    if (classSessionInput) {
+        classSessionInput.addEventListener('change', () => {
+            validateClassSessionDateTime();
+            renderSummary();
+        });
+    }
+
+    if (courseCodeSelect && semesterPreview && facultySelect) {
+        courseCodeSelect.addEventListener('change', () => {
+            const semester = courseCodeSelect.selectedOptions?.[0]?.dataset?.semester || '-';
+            semesterPreview.value = `{{ student.course }} - Sem ${semester}`;
+
+            const selectedSubject = courseCodeSelect.value;
+            const hasExplicitMapping = Object.keys(subjectFacultyMap || {}).length > 0;
+            const mappedRows = hasExplicitMapping
+                ? (subjectFacultyMap[selectedSubject] || [])
+                : allFacultyOptions;
+            upsertFacultyOptions(mappedRows);
+            renderSummary();
+        });
+    }
+
+    form.querySelectorAll('[data-next-step]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (!validateStepFields(currentStep)) {
+                return;
+            }
+            showStep(Math.min(currentStep + 1, 2));
+        });
+    });
+
+    form.querySelectorAll('[data-prev-step]').forEach((button) => {
+        button.addEventListener('click', () => {
+            showStep(Math.max(currentStep - 1, 1));
+        });
+    });
+
+    form.addEventListener('submit', (event) => {
+        if (!validateClassSessionDateTime()) {
+            event.preventDefault();
+            classSessionInput?.reportValidity();
+            return;
+        }
+        if (!validateStepFields(2)) {
+            event.preventDefault();
+        }
+    });
+
+    upsertFacultyOptions(allFacultyOptions);
+    if (courseCodeSelect?.value) {
+        courseCodeSelect.dispatchEvent(new Event('change'));
+    }
+
+    showStep(1);
+})();
+</script>
 {% endblock %}

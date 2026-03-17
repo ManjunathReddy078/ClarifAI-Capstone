@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Profile & Settings | ClarifAI{% endblock %}
+{% block page_title %}Profile & Settings{% endblock %}
+{% block content %}
+<section class="student-flow-shell profile-settings-shell">
+    <div class="flow-breadcrumb">Student <span>/</span> Profile & Settings</div>
+    <div class="profile-settings-header">
+        <h2>Profile & Settings</h2>
+        <p>Manage your account details and security.</p>
+    </div>
+
+    <article class="card settings-identity-card">
+        <div class="settings-identity-top">
+            <div class="settings-avatar">{{ (student.full_name or 'A')[0]|upper }}</div>
+            <div>
+                <h3>{{ student.full_name }}</h3>
+                <p>{{ student.email }}</p>
+                <div class="settings-meta-line">
+                    <span class="tag-pill active">Student</span>
+                    <span>{{ student.course }} Department</span>
+                </div>
+            </div>
+            <a class="btn danger" href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Sign Out</a>
+        </div>
+        <div class="settings-kpi-grid">
+            <div>
+                <small>UUID</small>
+                <strong>{{ student.unique_user_code }}</strong>
+            </div>
+            <div>
+                <small>Registration Number (PRN/SRN)</small>
+                <strong>{{ student.prn or 'Not Available' }}</strong>
+            </div>
+            <div>
+                <small>Semester</small>
+                <strong>{{ student.course }} | Sem {{ current_semester_display }}</strong>
+            </div>
+            <div>
+                <small>Section</small>
+                <strong>Section {{ student.section or 'A' }}</strong>
+            </div>
+        </div>
+    </article>
+
+    <nav class="settings-tabs" aria-label="Profile settings tabs">
+        <a class="settings-tab {{ 'active' if active_tab == 'profile' else '' }}" href="{{ url_for('student.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile Info</a>
+        <a class="settings-tab {{ 'active' if active_tab == 'security' else '' }}" href="{{ url_for('student.profile_settings', tab='security') }}"><i data-lucide="lock"></i> Security</a>
+    </nav>
+
+    {% if active_tab == 'profile' %}
+    <article class="card settings-panel">
+        <h3>Personal Information</h3>
+        <div class="settings-form-grid">
+            <label class="label">Full Name</label>
+            <label class="label">Email Address</label>
+            <input type="text" value="{{ student.full_name }}" disabled>
+            <input type="email" value="{{ student.email }}" disabled>
+
+            <label class="label">Department</label>
+            <label class="label">Section</label>
+            <input type="text" value="{{ student.course }}" disabled>
+            <input type="text" value="{{ student.section or 'A' }}" disabled>
+        </div>
+    </article>
+
+    <article class="card settings-panel" id="semesterExceptionCard" style="margin-top:12px;">
+        <h3>Semester Exception Request</h3>
+        <p class="chart-subtitle" style="margin-top:0;">
+            Use this if your current semester is incorrect and needs admin review.
+        </p>
+
+        <div class="settings-kpi-grid" style="margin-bottom:10px;">
+            <div>
+                <small>Current Semester (System)</small>
+                <strong>{{ current_semester_display }}</strong>
+            </div>
+            <div>
+                <small>Pending Request</small>
+                <strong>{{ ('#' ~ pending_semester_request.id) if pending_semester_request else 'None' }}</strong>
+            </div>
+            <div>
+                <small>Status</small>
+                <strong>{{ pending_semester_request.status|title if pending_semester_request else 'Ready' }}</strong>
+            </div>
+            <div>
+                <small>Max Semester</small>
+                <strong>{{ max_semester }}</strong>
+            </div>
+        </div>
+
+        <form method="post">
+            <input type="hidden" name="form_type" value="semester_exception">
+            <label class="label" for="requestedSemester">Request Semester</label>
+            <select id="requestedSemester" name="requested_semester" required>
+                {% for value in semester_exception_options %}
+                <option value="{{ value }}" {{ 'selected' if value == (pending_semester_request.requested_semester|string if pending_semester_request else current_semester_display|string) else '' }}>
+                    Semester {{ value }}
+                </option>
+                {% endfor %}
+            </select>
+            <button class="btn primary" type="submit" style="margin-top:10px;">
+                <i data-lucide="send"></i>
+                {{ 'Update Pending Request' if pending_semester_request else 'Submit Semester Exception' }}
+            </button>
+        </form>
+
+        <div class="table-wrap" style="margin-top:12px;">
+            <table class="table student-reviews-table">
+                <thead>
+                    <tr>
+                        <th>Request #</th>
+                        <th>Requested</th>
+                        <th>Suggested</th>
+                        <th>Status</th>
+                        <th>Raised At (IST)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in semester_requests %}
+                    <tr>
+                        <td>#{{ item.id }}</td>
+                        <td>Sem {{ item.requested_semester }}</td>
+                        <td>{{ ('Sem ' ~ item.suggested_semester) if item.suggested_semester else '-' }}</td>
+                        <td>
+                            <span class="badge {{ item.status if item.status in ['pending', 'approved', 'rejected'] else 'under_review' }}">
+                                {{ item.status|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td>{{ item.created_at|ist_datetime('%d %b %Y %I:%M %p') if item.created_at else '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5">No semester exception requests raised yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+    {% elif active_tab == 'security' %}
+    <article class="card settings-panel">
+        <h3>Change Password</h3>
+        <form method="post">
+            <input type="hidden" name="form_type" value="security_password">
+
+            <label class="label" for="currentPassword">Current Password</label>
+            <div class="password-wrap">
+                <input id="currentPassword" type="password" name="current_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="currentPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <label class="label" for="newPassword">New Password</label>
+            <div class="password-wrap">
+                <input id="newPassword" type="password" name="new_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="newPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <label class="label" for="confirmPassword">Confirm New Password</label>
+            <div class="password-wrap">
+                <input id="confirmPassword" type="password" name="confirm_new_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="confirmPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <button class="btn primary" type="submit"><i data-lucide="lock"></i> Update Password</button>
+        </form>
+
+        <form method="post" style="margin-top:20px;">
+            <input type="hidden" name="form_type" value="security_question">
+            <h3>Security Question</h3>
+            <label class="label" for="securityQuestion">Security Question</label>
+            <select id="securityQuestion" name="security_question" required>
+                {% for question in security_questions %}
+                    <option value="{{ question }}" {{ 'selected' if student.security_question == question else '' }}>{{ question }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="label" for="securityAnswer">Answer</label>
+            <input id="securityAnswer" type="text" name="security_answer" placeholder="Your answer" required>
+
+            <button class="btn primary" type="submit" style="margin-top:10px;"><i data-lucide="shield-check"></i> Save Question</button>
+        </form>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block title %}Share Experience | ClarifAI{% endblock %}
+{% block page_title %}Share Experience{% endblock %}
+{% block content %}
+<section class="student-flow-shell experience-shell">
+    <div class="student-flow-head">
+        <div class="flow-breadcrumb">Community <span>/</span> Experiences <span>/</span> Share Experience</div>
+        <h2>Share Your Experience</h2>
+        <p>Your identity stays hidden. Only an anonymous Experience ID is visible after publishing.</p>
+    </div>
+
+    <div class="card flow-info-card">
+        <p><i data-lucide="info"></i> <strong>Sentiment-Aware Workflow</strong><br>
+        Positive submissions are auto-approved. Neutral and negative submissions are routed for admin moderation.</p>
+    </div>
+
+    <form method="post" action="{{ url_for('student.create_experience') }}" class="card feedback-wizard" style="margin-top:14px;">
+        <label class="label">Title *</label>
+        <input type="text" name="title" maxlength="160" required placeholder="Example: How I improved my DBMS marks in 3 weeks">
+
+        <label class="label">Category *</label>
+        <select name="category" required>
+            <option value="">Select category</option>
+            {% for c in experience_categories %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="label">Tags *</label>
+        <select id="tagDropdown" class="tag-dropdown-select">
+            <option value="">— Select a tag to add —</option>
+            {% for t in experience_tags %}
+            <option value="{{ t }}" data-label="{{ labelize_exp_tag(t) }}">{{ labelize_exp_tag(t) }}</option>
+            {% endfor %}
+        </select>
+        <div class="tag-chip-bar" id="tagChipBar"></div>
+        <div id="tagHiddenInputs"></div>
+        <small class="chart-subtitle" style="display:block; margin-top:4px;">Pick tags from the dropdown; click × on a chip to remove.</small>
+
+        <label class="label">Experience Body * (100-10000 chars)</label>
+        <textarea name="body" id="experienceBody" minlength="100" maxlength="10000" required placeholder="Describe your challenge, what you tried, what worked, and practical advice for others."></textarea>
+
+        <div class="sentiment-preview-row">
+            <button class="btn" type="button" id="sentimentPreviewBtn"><i data-lucide="scan-text"></i> Check Polarity</button>
+            <span class="sentiment-preview-pill" id="sentimentPreviewPill">No preview yet</span>
+        </div>
+
+        <label class="label">Resource Links (optional)</label>
+        <textarea name="resource_links" maxlength="1200" placeholder="Add useful URLs, references, or notes."></textarea>
+
+        <div class="step-actions dual" style="margin-top:14px;">
+            <a class="btn" href="{{ url_for('student.experience_feed') }}"><i data-lucide="arrow-left"></i> Back to Experiences</a>
+            <button class="btn success" type="submit"><i data-lucide="send"></i> Publish Experience</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.tag-chip-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+}
+.tag-chip-bar:empty::before {
+    content: 'No tags selected yet';
+    color: var(--muted);
+    font-size: 0.82rem;
+    align-self: center;
+}
+.exp-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(99,102,241,0.18);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #c7d2fe;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.exp-tag-chip button {
+    background: none;
+    border: none;
+    color: #c7d2fe;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.95rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+.exp-tag-chip button:hover { opacity: 1; }
+</style>
+<script>
+(() => {
+    const form = document.querySelector('.feedback-wizard');
+    const bodyInput = document.getElementById('experienceBody');
+    const previewButton = document.getElementById('sentimentPreviewBtn');
+    const previewPill = document.getElementById('sentimentPreviewPill');
+    const dropdown = document.getElementById('tagDropdown');
+    const chipBar  = document.getElementById('tagChipBar');
+    const hiddens  = document.getElementById('tagHiddenInputs');
+    const selected = new Set();
+
+    const addTag = (value, label) => {
+        if (!value || selected.has(value)) return;
+        selected.add(value);
+
+        // chip
+        const chip = document.createElement('span');
+        chip.className = 'exp-tag-chip';
+        chip.dataset.value = value;
+        chip.innerHTML = `${label} <button type="button" aria-label="Remove ${label}">&times;</button>`;
+        chip.querySelector('button').addEventListener('click', () => removeTag(value));
+        chipBar.appendChild(chip);
+
+        // hidden input for form submission
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'tags';
+        inp.value = value;
+        inp.id = 'tag-hidden-' + value;
+        hiddens.appendChild(inp);
+    };
+
+    const removeTag = (value) => {
+        selected.delete(value);
+        chipBar.querySelector(`[data-value="${value}"]`)?.remove();
+        document.getElementById('tag-hidden-' + value)?.remove();
+    };
+
+    dropdown.addEventListener('change', () => {
+        const opt = dropdown.options[dropdown.selectedIndex];
+        if (opt && opt.value) {
+            addTag(opt.value, opt.textContent.trim());
+            dropdown.selectedIndex = 0;
+        }
+    });
+
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            if (selected.size === 0) {
+                event.preventDefault();
+                if (previewPill) {
+                    previewPill.textContent = 'Select at least one tag before publishing.';
+                }
+                dropdown.focus();
+            }
+        });
+    }
+
+    const sentimentPreview = async () => {
+        const text = (bodyInput?.value || '').trim();
+        if (!text) {
+            if (previewPill) {
+                previewPill.textContent = 'Enter experience text first';
+            }
+            return;
+        }
+
+        if (previewPill) {
+            previewPill.textContent = 'Analyzing...';
+        }
+
+        try {
+            const response = await fetch('{{ url_for("student.sentiment_preview") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+
+            if (!response.ok) {
+                throw new Error('failed');
+            }
+
+            const result = await response.json();
+            const polarity = (result.sentiment || 'neutral').toLowerCase();
+            const confidence = parseInt(result.confidence || '0', 10) || 0;
+            if (previewPill) {
+                previewPill.textContent = `Detected: ${polarity.charAt(0).toUpperCase() + polarity.slice(1)} (${confidence}% confidence)`;
+            }
+        } catch (_) {
+            if (previewPill) {
+                previewPill.textContent = 'Preview unavailable right now';
+            }
+        }
+    };
+
+    previewButton?.addEventListener('click', sentimentPreview);
+})();
+</script>
+{% endblock %}

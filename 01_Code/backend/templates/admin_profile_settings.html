@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% block title %}Admin Profile & Settings | ClarifAI{% endblock %}
+{% block page_title %}Admin Profile & Settings{% endblock %}
+{% block content %}
+<section class="student-flow-shell profile-settings-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Profile & Settings</div>
+    <div class="profile-settings-header">
+        <h2>Profile & Settings</h2>
+        <p>Manage admin credentials and review governance responsibilities.</p>
+    </div>
+
+    <article class="card settings-identity-card">
+        <div class="settings-identity-top">
+            <div class="settings-avatar">{{ (admin_user.full_name or 'A')[0]|upper }}</div>
+            <div>
+                <h3>{{ admin_user.full_name }}</h3>
+                <p>{{ admin_user.email }}</p>
+                <div class="settings-meta-line">
+                    <span class="tag-pill active">Administrator</span>
+                    <span>Governance and moderation console</span>
+                </div>
+            </div>
+            <a class="btn danger" href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Sign Out</a>
+        </div>
+        <div class="settings-kpi-grid">
+            <div>
+                <small>UUID</small>
+                <strong>{{ admin_user.unique_user_code }}</strong>
+            </div>
+            <div>
+                <small>First Login</small>
+                <strong>{{ admin_user.first_login_at|ist_datetime('%d %b %Y %I:%M %p') if admin_user.first_login_at else 'Not recorded' }}</strong>
+            </div>
+            <div>
+                <small>Last Login</small>
+                <strong>{{ admin_user.last_login_at|ist_datetime('%d %b %Y %I:%M %p') if admin_user.last_login_at else 'Not recorded' }}</strong>
+            </div>
+            <div>
+                <small>My Moderation Actions</small>
+                <strong id="profileModerationActionsCount">{{ moderation_actions_count }}</strong>
+            </div>
+        </div>
+    </article>
+
+    <nav class="settings-tabs" aria-label="Admin settings tabs">
+        <a class="settings-tab {{ 'active' if active_tab == 'profile' else '' }}" href="{{ url_for('admin.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile Info</a>
+        <a class="settings-tab {{ 'active' if active_tab == 'security' else '' }}" href="{{ url_for('admin.profile_settings', tab='security') }}"><i data-lucide="lock"></i> Security</a>
+    </nav>
+
+    {% if active_tab == 'profile' %}
+    <article class="card settings-panel">
+        <h3>Identity Information</h3>
+        <p class="chart-subtitle" style="margin-top:0;">Admin identity fields are protected to maintain audit integrity.</p>
+        <div class="settings-form-grid">
+            <label class="label">Full Name</label>
+            <label class="label">Email Address</label>
+            <input type="text" value="{{ admin_user.full_name }}" disabled>
+            <input type="email" value="{{ admin_user.email }}" disabled>
+
+            <label class="label">Role</label>
+            <label class="label">Account Status</label>
+            <input type="text" value="{{ admin_user.role|title }}" disabled>
+            <input type="text" value="{{ 'Active' if admin_user.is_active else 'Inactive' }}" disabled>
+        </div>
+    </article>
+
+    <article class="card" style="margin-top:12px;">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Governance Snapshot</h3>
+            <span class="chart-subtitle">Current system queues</span>
+        </div>
+        <div class="settings-kpi-grid">
+            <div>
+                <small>Total Users</small>
+                <strong id="profileTotalUsersCount">{{ total_users }}</strong>
+            </div>
+            <div>
+                <small>Active Users</small>
+                <strong id="profileActiveUsersCount">{{ active_users }}</strong>
+            </div>
+            <div>
+                <small>Moderation Queue</small>
+                <strong id="profileModerationQueueCount">{{ queue_stats.moderation_queue }}</strong>
+            </div>
+            <div>
+                <small>Pending Experiences</small>
+                <strong id="profilePendingExperienceCount">{{ queue_stats.experience_pending }}</strong>
+            </div>
+            <div>
+                <small>Open Reports</small>
+                <strong id="profileOpenReportsCount">{{ queue_stats.reports_open }}</strong>
+            </div>
+            <div>
+                <small>Unread Suggestions</small>
+                <strong id="profileUnreadSuggestionsCount">{{ queue_stats.suggestions_unread }}</strong>
+            </div>
+            <div>
+                <small>Semester Exceptions</small>
+                <strong id="profileSemesterPendingCount">{{ queue_stats.semester_pending }}</strong>
+            </div>
+            <div>
+                <small>Faculty Delivery Queue</small>
+                <strong id="profileFacultyQueueCount">{{ queue_stats.faculty_delivery_pending }}</strong>
+            </div>
+        </div>
+    </article>
+
+    <article class="card table-wrap" style="margin-top:12px;">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Recent Moderation Actions</h3>
+            <a class="subtle-link" href="{{ url_for('admin.audit_log') }}">View Audit Log</a>
+        </div>
+        <p id="profileLiveRefreshInfo" class="chart-subtitle" style="margin-top:0;">Auto-refreshing governance data every 20 seconds.</p>
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Action</th>
+                    <th>Feedback</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody id="profileRecentActionsBody">
+                {% for log in recent_actions %}
+                <tr>
+                    <td>{{ log.created_at|ist_datetime('%d %b %Y %I:%M %p') if log.created_at else '-' }}</td>
+                    <td><span class="audit-chip {{ log.action }}">{{ log.action.replace('_', ' ')|title }}</span></td>
+                    <td>{{ log.feedback.subject if log.feedback else '-' }}</td>
+                    <td>{{ log.note or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if recent_actions %}
+        <p id="profileRecentActionsEmpty" style="margin:8px 0 0; color:var(--muted); display:none;">No moderation actions recorded for this account yet.</p>
+        {% else %}
+        <p id="profileRecentActionsEmpty" style="margin:8px 0 0; color:var(--muted);">No moderation actions recorded for this account yet.</p>
+        {% endif %}
+    </article>
+    {% elif active_tab == 'security' %}
+    <article class="card settings-panel">
+        <h3>Change Password</h3>
+        <form method="post">
+            <input type="hidden" name="form_type" value="security_password">
+
+            <label class="label" for="adminCurrentPassword">Current Password</label>
+            <div class="password-wrap">
+                <input id="adminCurrentPassword" type="password" name="current_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="adminCurrentPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <label class="label" for="adminNewPassword">New Password</label>
+            <div class="password-wrap">
+                <input id="adminNewPassword" type="password" name="new_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="adminNewPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <label class="label" for="adminConfirmPassword">Confirm New Password</label>
+            <div class="password-wrap">
+                <input id="adminConfirmPassword" type="password" name="confirm_new_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="adminConfirmPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <button class="btn primary" type="submit"><i data-lucide="lock"></i> Update Password</button>
+        </form>
+
+        <form method="post" style="margin-top:20px;">
+            <input type="hidden" name="form_type" value="security_question">
+            <h3>Security Question</h3>
+            <label class="label" for="adminSecurityQuestion">Security Question</label>
+            <select id="adminSecurityQuestion" name="security_question" required>
+                {% for question in security_questions %}
+                    <option value="{{ question }}" {{ 'selected' if admin_user.security_question == question else '' }}>{{ question }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="label" for="adminSecurityAnswer">Answer</label>
+            <input id="adminSecurityAnswer" type="text" name="security_answer" placeholder="Your answer" required>
+
+            <button class="btn primary" type="submit" style="margin-top:10px;"><i data-lucide="shield-check"></i> Save Question</button>
+        </form>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}
+{% block extra_scripts %}
+{% if active_tab == 'profile' %}
+<script>
+(() => {
+    const liveUrl = "{{ url_for('admin.profile_settings_live') }}";
+    const nodes = {
+        moderationActions: document.getElementById('profileModerationActionsCount'),
+        totalUsers: document.getElementById('profileTotalUsersCount'),
+        activeUsers: document.getElementById('profileActiveUsersCount'),
+        moderationQueue: document.getElementById('profileModerationQueueCount'),
+        pendingExperience: document.getElementById('profilePendingExperienceCount'),
+        openReports: document.getElementById('profileOpenReportsCount'),
+        unreadSuggestions: document.getElementById('profileUnreadSuggestionsCount'),
+        semesterPending: document.getElementById('profileSemesterPendingCount'),
+        facultyQueue: document.getElementById('profileFacultyQueueCount'),
+        actionsBody: document.getElementById('profileRecentActionsBody'),
+        emptyState: document.getElementById('profileRecentActionsEmpty'),
+        refreshInfo: document.getElementById('profileLiveRefreshInfo')
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const buildRows = (rows) => {
+        if (!rows || !rows.length) {
+            nodes.actionsBody.innerHTML = '';
+            nodes.emptyState.style.display = '';
+            return;
+        }
+        nodes.emptyState.style.display = 'none';
+        nodes.actionsBody.innerHTML = rows.map((row) => `
+            <tr>
+                <td>${escapeHtml(row.created_at_ist || '-')}</td>
+                <td><span class="audit-chip ${escapeHtml(row.action_class || '')}">${escapeHtml(row.action || '-')}</span></td>
+                <td>${escapeHtml(row.feedback_subject || '-')}</td>
+                <td>${escapeHtml(row.note || '-')}</td>
+            </tr>
+        `).join('');
+    };
+
+    let inFlight = false;
+    const refreshNow = async () => {
+        if (inFlight) {
+            return;
+        }
+        inFlight = true;
+        try {
+            const response = await fetch(liveUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                cache: 'no-store'
+            });
+            if (!response.ok) {
+                throw new Error('Profile live refresh failed');
+            }
+            const payload = await response.json();
+            const queue = payload.queue_stats || {};
+            nodes.moderationActions.textContent = payload.moderation_actions_count ?? '0';
+            nodes.totalUsers.textContent = payload.total_users ?? '0';
+            nodes.activeUsers.textContent = payload.active_users ?? '0';
+            nodes.moderationQueue.textContent = queue.moderation_queue ?? '0';
+            nodes.pendingExperience.textContent = queue.experience_pending ?? '0';
+            nodes.openReports.textContent = queue.reports_open ?? '0';
+            nodes.unreadSuggestions.textContent = queue.suggestions_unread ?? '0';
+            nodes.semesterPending.textContent = queue.semester_pending ?? '0';
+            nodes.facultyQueue.textContent = queue.faculty_delivery_pending ?? '0';
+            buildRows(payload.recent_actions || []);
+            nodes.refreshInfo.textContent = `Auto-refreshing governance data every 20 seconds. Last sync: ${new Date().toLocaleTimeString()}`;
+        } catch (error) {
+            nodes.refreshInfo.textContent = 'Auto-refreshing governance data every 20 seconds. Waiting to reconnect...';
+        } finally {
+            inFlight = false;
+        }
+    };
+
+    refreshNow();
+    const timer = window.setInterval(refreshNow, 20000);
+    window.addEventListener('beforeunload', () => window.clearInterval(timer));
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Faculty Profile & Settings | ClarifAI{% endblock %}
+{% block page_title %}Faculty Profile & Settings{% endblock %}
+{% block content %}
+<section class="student-flow-shell profile-settings-shell">
+    <div class="flow-breadcrumb">Faculty <span>/</span> Profile & Settings</div>
+    <div class="profile-settings-header">
+        <h2>Profile & Settings</h2>
+        <p>Manage your faculty profile, credentials, and security controls.</p>
+    </div>
+
+    <article class="card settings-identity-card">
+        <div class="settings-identity-top">
+            <div class="settings-avatar">{{ (faculty.full_name or 'F')[0]|upper }}</div>
+            <div>
+                <h3>{{ faculty.full_name }}</h3>
+                <p>{{ faculty.email }}</p>
+                <div class="settings-meta-line">
+                    <span class="tag-pill active">Faculty</span>
+                    <span>{{ (assigned_courses|join(', ')) if assigned_courses else 'No active course assignment' }}</span>
+                </div>
+            </div>
+            <a class="btn danger" href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Sign Out</a>
+        </div>
+        <div class="settings-kpi-grid">
+            <div>
+                <small>UUID</small>
+                <strong>{{ faculty.unique_user_code }}</strong>
+            </div>
+            <div>
+                <small>Faculty ID</small>
+                <strong>{{ faculty.faculty_id or 'Not Available' }}</strong>
+            </div>
+            <div>
+                <small>Course</small>
+                <strong>{{ (assigned_courses|join(', ')) if assigned_courses else 'Not Assigned' }}</strong>
+            </div>
+            <div>
+                <small>Active Subjects</small>
+                <strong>{{ teaching_rows|length }}</strong>
+            </div>
+        </div>
+    </article>
+
+    <nav class="settings-tabs" aria-label="Faculty settings tabs">
+        <a class="settings-tab {{ 'active' if active_tab == 'profile' else '' }}" href="{{ url_for('faculty.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile Info</a>
+        <a class="settings-tab {{ 'active' if active_tab == 'security' else '' }}" href="{{ url_for('faculty.profile_settings', tab='security') }}"><i data-lucide="lock"></i> Security</a>
+    </nav>
+
+    {% if active_tab == 'profile' %}
+    <article class="card settings-panel">
+        <h3>Personal Information</h3>
+        <p class="chart-subtitle" style="margin-top:0;">Personal details are read-only for faculty accounts. Contact admin to request updates.</p>
+        <div class="settings-form-grid">
+            <label class="label">Full Name</label>
+            <label class="label">Email Address</label>
+            <input type="text" value="{{ faculty.full_name }}" disabled>
+            <input type="email" value="{{ faculty.email }}" disabled>
+
+            <label class="label">Faculty ID</label>
+            <label class="label">Course</label>
+            <input type="text" value="{{ faculty.faculty_id or 'Not Available' }}" disabled>
+            <input type="text" value="{{ (assigned_courses|join(', ')) if assigned_courses else 'Not Assigned' }}" disabled>
+        </div>
+    </article>
+
+    <article class="card table-wrap" style="margin-top:12px;">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Current Teaching Assignments</h3>
+            <span class="chart-subtitle">Total: {{ teaching_rows|length }}</span>
+        </div>
+        {% if teaching_rows %}
+        <table class="table faculty-feedback-table">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Semester</th>
+                    <th>Section</th>
+                    <th>Subject Code</th>
+                    <th>Subject Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in teaching_rows %}
+                <tr>
+                    <td>{{ row.course_code }}</td>
+                    <td>{{ row.semester_no }}</td>
+                    <td>{{ row.section }}</td>
+                    <td><span class="faculty-subject-text">{{ row.subject_code }}</span></td>
+                    <td>{{ row.subject_name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="margin:0; color:var(--muted);">No active teaching assignments found.</p>
+        {% endif %}
+    </article>
+    {% elif active_tab == 'security' %}
+    <article class="card settings-panel">
+        <h3>Change Password</h3>
+        <form method="post">
+            <input type="hidden" name="form_type" value="security_password">
+
+            <label class="label" for="facultyCurrentPassword">Current Password</label>
+            <div class="password-wrap">
+                <input id="facultyCurrentPassword" type="password" name="current_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="facultyCurrentPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <label class="label" for="facultyNewPassword">New Password</label>
+            <div class="password-wrap">
+                <input id="facultyNewPassword" type="password" name="new_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="facultyNewPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <label class="label" for="facultyConfirmPassword">Confirm New Password</label>
+            <div class="password-wrap">
+                <input id="facultyConfirmPassword" type="password" name="confirm_new_password" required>
+                <button class="icon-btn" type="button" data-toggle-password="facultyConfirmPassword"><i data-lucide="eye"></i></button>
+            </div>
+
+            <button class="btn primary" type="submit"><i data-lucide="lock"></i> Update Password</button>
+        </form>
+
+        <form method="post" style="margin-top:20px;">
+            <input type="hidden" name="form_type" value="security_question">
+            <h3>Security Question</h3>
+            <label class="label" for="facultySecurityQuestion">Security Question</label>
+            <select id="facultySecurityQuestion" name="security_question" required>
+                {% for question in security_questions %}
+                    <option value="{{ question }}" {{ 'selected' if faculty.security_question == question else '' }}>{{ question }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="label" for="facultySecurityAnswer">Answer</label>
+            <input id="facultySecurityAnswer" type="text" name="security_answer" placeholder="Your answer" required>
+
+            <button class="btn primary" type="submit" style="margin-top:10px;"><i data-lucide="shield-check"></i> Save Question</button>
+        </form>
+    </article>
+    {% endif %}
+</section>
+{% endblock %}

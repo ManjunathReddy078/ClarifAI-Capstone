@@ -2,141 +2,267 @@
 {% block title %}Faculty Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Faculty Dashboard{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
-    <div>
-        <h3 style="margin:0;">Faculty Dashboard</h3>
-        <p class="chart-subtitle">{{ faculty.full_name }} · Guided review and intervention workspace</p>
-    </div>
-    <div class="student-hero-actions">
-        <a class="btn" href="{{ url_for('faculty.reviews') }}"><i data-lucide="bar-chart-3"></i> View Full Insights</a>
-        <a class="btn primary" href="{{ url_for('faculty.resource_post') }}"><i data-lucide="square-pen"></i> Share Resource</a>
-    </div>
-</div>
+<section class="faculty-shell">
+    <div class="flow-breadcrumb">Faculty <span>/</span> Dashboard</div>
 
-<div class="grid-4" style="margin-bottom:14px;">
-    <div class="card modern-stat">
-        <div class="modern-stat-head"><small>Approved Feedback</small><i data-lucide="message-square" class="modern-stat-icon"></i></div>
-        <h3>{{ approved_feedback|length }}</h3>
-        <p>Published this semester</p>
-    </div>
-    <div class="card modern-stat">
-        <div class="modern-stat-head"><small>Total Checklists</small><i data-lucide="check-square" class="modern-stat-icon"></i></div>
-        <h3>{{ checklists|length }}</h3>
-        <p>Assigned to students</p>
-    </div>
-    <div class="card modern-stat">
-        <div class="modern-stat-head"><small>Pending</small><i data-lucide="clock-3" class="modern-stat-icon"></i></div>
-        <h3>{{ pending_count }}</h3>
-        <p>Awaiting completion</p>
-    </div>
-    <div class="card modern-stat">
-        <div class="modern-stat-head"><small>Resources Shared</small><i data-lucide="book-open" class="modern-stat-icon"></i></div>
-        <h3>{{ total_resources }}</h3>
-        <p>This semester</p>
-    </div>
-</div>
-
-<div class="grid-3" style="margin-bottom:14px;">
-    <div class="card chart-card" style="grid-column: span 2;">
-        <h3 style="margin-top:0;">Execution Overview</h3>
-        <p class="chart-subtitle">Checklist completion and resource-sharing activity</p>
-        <canvas id="facultyExecutionChart"></canvas>
-    </div>
-    <div class="card">
-        <h3 style="margin-top:0;">Quick Actions</h3>
-        <div class="flex" style="flex-direction:column; align-items:stretch; gap:8px;">
-            <a class="btn" href="{{ url_for('faculty.reviews') }}">Feedback Insights</a>
-            <a class="btn" href="{{ url_for('faculty.checklists_page') }}">Checklist Manager</a>
-            <a class="btn" href="{{ url_for('faculty.my_resources') }}">My Resources</a>
-            <a class="btn primary" href="{{ url_for('faculty.resource_post') }}">Share Resource</a>
+    <div class="space-between faculty-head-row" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
+        <div>
+            <h3 style="margin:0;">Faculty Dashboard</h3>
+            <p class="chart-subtitle">{{ faculty.full_name }} · {{ faculty_subject_summary }}</p>
+        </div>
+        <div class="student-hero-actions">
+            <a class="btn primary" href="{{ url_for('faculty.reviews') }}"><i data-lucide="bar-chart-3"></i> View Full Insights</a>
         </div>
     </div>
-</div>
 
-<div class="grid-2">
-    <div class="card">
-        <h3 style="margin-top:0;">Create Checklist</h3>
-        <form method="post" action="{{ url_for('faculty.create_checklist') }}">
-            <label class="label">Title</label>
-            <input type="text" name="title" required>
+    <div class="grid-4 faculty-kpi-grid" style="margin-bottom:14px;">
+        <article class="card faculty-kpi-card">
+            <div class="modern-stat-head"><small>Approved Feedback</small><i data-lucide="message-square" class="modern-stat-icon"></i></div>
+            <h3>{{ approved_count }}</h3>
+            <p>Published this semester</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-teal">
+            <div class="modern-stat-head"><small>Avg Aspect Score</small><i data-lucide="star" class="modern-stat-icon"></i></div>
+            {% if avg_aspect_score is not none %}
+                <h3>{{ "%.1f"|format(avg_aspect_score) }} / 5</h3>
+                <p>Across scored dimensions</p>
+            {% else %}
+                <h3>--</h3>
+                <p>No approved feedback data yet</p>
+            {% endif %}
+        </article>
+        <article class="card faculty-kpi-card kpi-violet">
+            <div class="modern-stat-head"><small>Active Checklists</small><i data-lucide="clipboard-list" class="modern-stat-icon"></i></div>
+            <h3>{{ active_checklists }}</h3>
+            <p>Assigned to students</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-green">
+            <div class="modern-stat-head"><small>Intervention Reach</small><i data-lucide="zap" class="modern-stat-icon"></i></div>
+            <h3>{{ interventions_logged }}</h3>
+            <p>Targeted student assignments</p>
+        </article>
+    </div>
 
-            <label class="label">Description</label>
-            <textarea name="description"></textarea>
-
-            <label class="label">Student Email</label>
-            <input type="email" name="student_email" required>
-
-            <div style="margin-top:14px;">
-                <button class="btn primary" type="submit">Create</button>
+    <div class="grid-3" style="margin-bottom:14px;">
+        <article class="card chart-card" style="grid-column: span 2;">
+            <div class="space-between" style="margin-bottom:4px;">
+                <h3 style="margin:0;">Approved Feedback Trend</h3>
+                <a class="btn subtle-link" href="{{ url_for('faculty.reviews') }}">Details <i data-lucide="chevron-right"></i></a>
             </div>
+            <p class="chart-subtitle">Sentiment distribution over semester cycle</p>
+            <form method="get" class="faculty-subject-filter-row" style="margin-bottom:10px;">
+                <input type="hidden" name="subject_semester" value="{{ selected_subject_semester }}">
+                <input type="hidden" name="subject_section" value="{{ selected_subject_section }}">
+                <input type="month" name="trend_start" value="{{ trend_start }}" aria-label="Trend start month" required>
+                <input type="month" name="trend_end" value="{{ trend_end }}" aria-label="Trend end month" required>
+                <button class="btn primary" type="submit">Apply Range</button>
+                <a class="btn" href="{{ url_for('faculty.dashboard') }}">Reset</a>
+            </form>
+            {% if trend_filter_error %}
+                <p class="chart-subtitle" style="margin-top:-2px; color:var(--warning);">{{ trend_filter_error }}</p>
+            {% else %}
+                <p class="chart-subtitle" style="margin-top:-2px;">Month range requires at least 6 months.</p>
+            {% endif %}
+            <canvas id="facultyTrendChart"></canvas>
+            {% if not dashboard_has_trend_data %}
+                <p style="margin:8px 0 0; color:var(--muted);">No approved feedback found in the selected month range. Trend chart is shown with zero values.</p>
+            {% endif %}
+        </article>
+
+        <article class="card chart-card faculty-aspect-card">
+            <h3 style="margin:0;">Aspect-wise Scores</h3>
+            <p class="chart-subtitle">Average across all teaching dimensions</p>
+            <canvas id="facultyAspectRadar"></canvas>
+            <div class="faculty-score-list">
+                {% if aspect_scores %}
+                    {% for label, score in aspect_scores.items() %}
+                        <div class="faculty-score-row">
+                            <span>{{ label }}</span>
+                            <div class="faculty-score-track"><span style="width:{{ (score / 5 * 100)|round(0, 'floor') }}%"></span></div>
+                            <strong>{{ "%.1f"|format(score) }}</strong>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    {% for label in ['Clarity', 'Pace', 'Assessment', 'Engagement'] %}
+                        <div class="faculty-score-row">
+                            <span>{{ label }}</span>
+                            <div class="faculty-score-track"><span style="width:0%"></span></div>
+                            <strong>--</strong>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {% if not dashboard_has_aspect_data %}
+                <p style="margin:8px 0 0; color:var(--muted);">No aspect data available yet. Radar chart is shown with zero values.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    <article class="card chart-card" style="margin-bottom:14px;">
+        <h3 style="margin:0;">Sentiment by Subject</h3>
+        <p class="chart-subtitle">Breakdown of positive/neutral/negative across subjects</p>
+        <form method="get" class="faculty-subject-filter-row" style="margin-bottom:10px;">
+            <input type="hidden" name="trend_start" value="{{ trend_start }}">
+            <input type="hidden" name="trend_end" value="{{ trend_end }}">
+            <div class="faculty-filter-chip"><i data-lucide="graduation-cap"></i> Assigned Course: {{ assigned_course_display }}</div>
+            <select name="subject_semester" aria-label="Filter subject chart by semester">
+                <option value="all" {{ 'selected' if selected_subject_semester == 'all' else '' }}>All Semesters</option>
+                {% for option in subject_semester_options %}
+                    <option value="{{ option }}" {{ 'selected' if selected_subject_semester == option else '' }}>Semester {{ option }}</option>
+                {% endfor %}
+            </select>
+            <select name="subject_section" aria-label="Filter subject chart by section">
+                <option value="all" {{ 'selected' if selected_subject_section == 'all' else '' }}>All Sections</option>
+                {% for option in subject_section_options %}
+                    <option value="{{ option }}" {{ 'selected' if selected_subject_section == option else '' }}>Section {{ option }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('faculty.dashboard') }}">Reset</a>
         </form>
-    </div>
+        {% if selected_subject_semester != 'all' or selected_subject_section != 'all' %}
+            <p class="chart-subtitle" style="margin-top:-2px;">Filtered entries: {{ subject_filtered_count }}</p>
+        {% endif %}
+        <canvas id="facultySubjectChart"></canvas>
+        {% if not dashboard_has_subject_data %}
+            <p style="margin:8px 0 0; color:var(--muted);">No subject-level sentiment data for the selected semester and section. Chart is shown with zero values.</p>
+        {% endif %}
+    </article>
 
-    <div class="card">
-        <h3 style="margin-top:0;">Checklist Progress</h3>
-        {% for item in checklists[:6] %}
-            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-                <div class="space-between" style="gap:8px;">
-                    <strong>{{ item.title }}</strong>
-                    <span class="badge {{ 'approved' if item.is_completed else 'under_review' }}">{{ 'Completed' if item.is_completed else 'Pending' }}</span>
+    <article class="card table-wrap" style="margin-bottom:14px;">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Subjects You Teach</h3>
+            <span class="chart-subtitle">Assigned entries: {{ total_teaching_offerings }}</span>
+        </div>
+        <p class="chart-subtitle">Semester and section filters above are applied to this list.</p>
+        {% if filtered_teaching_offerings %}
+            <table class="table faculty-feedback-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Semester</th>
+                        <th>Section</th>
+                        <th>Subject Code</th>
+                        <th>Subject Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offering in filtered_teaching_offerings %}
+                    <tr>
+                        <td>{{ offering.course_code }}</td>
+                        <td>{{ offering.semester_no }}</td>
+                        <td>{{ offering.section }}</td>
+                        <td><span class="faculty-subject-text">{{ offering.subject_code }}</span></td>
+                        <td>{{ offering.subject_name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="margin:0; color:var(--muted);">No subject assignments found for the selected semester and section.</p>
+        {% endif %}
+    </article>
+
+    <article class="card faculty-panel" style="margin-bottom:14px;">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Actionable Insights</h3>
+            <a class="btn subtle-link" href="{{ url_for('faculty.checklists_page') }}">Log Action <i data-lucide="chevron-right"></i></a>
+        </div>
+        <div class="faculty-insight-list">
+            {% for insight in insights %}
+                <div class="faculty-insight-row">
+                    <i data-lucide="{{ insight.icon }}"></i>
+                    <div>
+                        <strong>{{ insight.title }}</strong>
+                        <p>{{ insight.detail }}</p>
+                    </div>
                 </div>
-                <div style="color:var(--muted);">{{ item.student.full_name }} ({{ item.student.email }})</div>
-            </div>
-        {% else %}
-            <p>No checklist records yet.</p>
-        {% endfor %}
-    </div>
-</div>
+            {% endfor %}
+        </div>
+    </article>
 
-<div class="grid-2" style="margin-top:14px;">
-    <div class="card">
-        <h3 style="margin-top:0;">Recent Resources</h3>
-        {% for post in recent_resources %}
-            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-                <strong>{{ post.title }}</strong>
-                <div style="color:var(--muted);">{{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
-            </div>
-        {% else %}
-            <p>No resources shared yet.</p>
-        {% endfor %}
-    </div>
-
-    <div class="card">
-        <h3 style="margin-top:0;">Recent Approved Feedback</h3>
-        {% for item in approved_feedback[:4] %}
-            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-                <div class="space-between" style="gap:8px;">
+    <article class="card faculty-panel">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Recent Approved Feedback</h3>
+            <a class="btn subtle-link" href="{{ url_for('faculty.reviews', view='entries') }}">View all <i data-lucide="chevron-right"></i></a>
+        </div>
+        {% for item in approved_feedback[:5] %}
+            <div class="faculty-feedback-row">
+                <div>
                     <strong>{{ item.subject }}</strong>
-                    <span class="badge approved">{{ item.sentiment|title }}</span>
+                    <p>{{ item.feedback_text[:210] }}{% if item.feedback_text|length > 210 %}...{% endif %}</p>
+                    <small>{{ item.reason.replace('_', ' ')|title }} · {{ item.created_at|ist_datetime('%d %b') }}</small>
                 </div>
-                <div style="color:var(--muted);">{{ item.reason }} · {{ item.created_at.strftime('%d %b %Y') }}</div>
-                <p style="margin:6px 0 0; color:var(--muted);">{{ item.feedback_text[:120] }}{% if item.feedback_text|length > 120 %}...{% endif %}</p>
+                <span class="faculty-sentiment-pill {{ item.sentiment }}">{{ item.sentiment|title }}</span>
             </div>
         {% else %}
-            <p>No approved feedback available.</p>
+            <p style="margin:0; color:var(--muted);">No approved feedback available.</p>
         {% endfor %}
-    </div>
-</div>
+    </article>
+</section>
 {% endblock %}
 
 {% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
-    const payload = {{ dashboard_chart | tojson }};
+    const payload = {{ dashboard_payload | tojson }};
     const css = getComputedStyle(document.documentElement);
     const textColor = css.getPropertyValue('--text').trim();
     const gridColor = css.getPropertyValue('--border').trim();
 
-    new Chart(document.getElementById('facultyExecutionChart'), {
-        type: 'bar',
+    const aspectLabels = (payload.aspect_labels && payload.aspect_labels.length)
+        ? payload.aspect_labels
+        : ['Clarity', 'Pace', 'Assessment', 'Engagement'];
+    const aspectValues = (payload.aspect_values && payload.aspect_values.length)
+        ? payload.aspect_values
+        : [0, 0, 0, 0];
+
+    const subjectLabels = (payload.subject_labels && payload.subject_labels.length)
+        ? payload.subject_labels
+        : ['No Data'];
+    const subjectPositive = (payload.subject_positive && payload.subject_positive.length)
+        ? payload.subject_positive
+        : [0];
+    const subjectNeutral = (payload.subject_neutral && payload.subject_neutral.length)
+        ? payload.subject_neutral
+        : [0];
+    const subjectNegative = (payload.subject_negative && payload.subject_negative.length)
+        ? payload.subject_negative
+        : [0];
+
+    const trendCanvas = document.getElementById('facultyTrendChart');
+    if (trendCanvas) {
+        new Chart(trendCanvas, {
+        type: 'line',
         data: {
-            labels: payload.labels,
-            datasets: [{
-                label: 'Count',
-                data: payload.values,
-                backgroundColor: ['#34d399', '#fbbf24', '#6366f1']
-            }]
+            labels: payload.trend_labels,
+            datasets: [
+                {
+                    label: 'Positive',
+                    data: payload.trend_positive,
+                    borderColor: '#34d399',
+                    backgroundColor: 'rgba(52, 211, 153, 0.16)',
+                    fill: true,
+                    tension: 0.34
+                },
+                {
+                    label: 'Neutral',
+                    data: payload.trend_neutral,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    fill: true,
+                    tension: 0.34
+                },
+                {
+                    label: 'Negative',
+                    data: payload.trend_negative,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+                    fill: true,
+                    tension: 0.34
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -147,7 +273,64 @@
                 y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
             }
         }
-    });
+        });
+    }
+
+    const aspectCanvas = document.getElementById('facultyAspectRadar');
+    if (aspectCanvas) {
+        new Chart(aspectCanvas, {
+            type: 'radar',
+            data: {
+                labels: aspectLabels,
+                datasets: [{
+                    label: 'Aspect Score',
+                    data: aspectValues,
+                    borderColor: '#22d3ee',
+                    backgroundColor: 'rgba(34, 211, 238, 0.18)',
+                    pointBackgroundColor: '#22d3ee'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 5,
+                        ticks: { color: textColor, stepSize: 1, backdropColor: 'transparent' },
+                        angleLines: { color: gridColor },
+                        grid: { color: gridColor },
+                        pointLabels: { color: textColor }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    const subjectCanvas = document.getElementById('facultySubjectChart');
+    if (subjectCanvas) {
+        new Chart(subjectCanvas, {
+            type: 'bar',
+            data: {
+                labels: subjectLabels,
+                datasets: [
+                    { label: 'Positive', data: subjectPositive, backgroundColor: 'rgba(52, 211, 153, 0.78)' },
+                    { label: 'Neutral', data: subjectNeutral, backgroundColor: 'rgba(245, 158, 11, 0.78)' },
+                    { label: 'Negative', data: subjectNegative, backgroundColor: 'rgba(239, 68, 68, 0.78)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor } } },
+                scales: {
+                    x: { ticks: { color: textColor }, grid: { color: gridColor }, stacked: true },
+                    y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true, stacked: true }
+                }
+            }
+        });
+    }
 })();
 </script>
 {% endblock %}

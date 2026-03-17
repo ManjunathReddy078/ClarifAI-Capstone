@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}My Experiences | ClarifAI{% endblock %}
+{% block page_title %}My Experiences{% endblock %}
+{% block content %}
+<section class="student-flow-shell experience-shell">
+    <div class="flow-breadcrumb">Student <span>/</span> Experiences <span>/</span> My Experiences</div>
+    <div class="space-between" style="margin-bottom:12px; align-items:flex-end; gap:12px;">
+        <div>
+            <h2 style="margin:0;">My Experience Submissions</h2>
+            <p class="chart-subtitle">Track approval status and delete entries when needed.</p>
+        </div>
+        <a class="btn" href="{{ url_for('student.experience_feed') }}"><i data-lucide="arrow-left"></i> Back to Feed</a>
+    </div>
+
+    <div class="table-wrap">
+        <table class="student-reviews-table experience-report-table">
+            <thead>
+                <tr>
+                    <th>Anon ID</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Admin Note</th>
+                    <th>Submitted At (IST)</th>
+                    <th>Upvotes</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in experiences %}
+                <tr>
+                    <td><span class="badge badge-soft">{{ exp.anon_id }}</span></td>
+                    <td>{{ exp.title }}</td>
+                    <td>{{ exp.category }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-success' if exp.status == 'approved' else ('badge-danger' if exp.status == 'rejected' else ('badge-info' if exp.status == 'request_edit' else 'badge-warning')) }}">
+                            {{ exp.status.replace('_', ' ')|title }}
+                        </span>
+                    </td>
+                    <td>{{ exp.admin_note or '-' }}</td>
+                    <td>{{ exp.created_at_ist|ist_datetime('%d-%m-%Y %I:%M %p') if exp.created_at_ist else '-' }}</td>
+                    <td>{{ exp.upvote_count }}</td>
+                    <td>
+                        <div class="flex" style="gap:8px;">
+                            <a class="btn" href="{{ url_for('student.edit_experience', exp_id=exp.id) }}"><i data-lucide="pencil"></i> Edit</a>
+                            <form method="post" action="{{ url_for('student.delete_experience', exp_id=exp.id) }}" onsubmit="return confirm('Delete this experience permanently?')">
+                                <button class="btn danger" type="submit"><i data-lucide="trash-2"></i> Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8">You have not posted any experiences yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

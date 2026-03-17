@@ -14,17 +14,56 @@
             {% endfor %}
         </select>
 
-        <label class="label">Subject / Course</label>
-        <input type="text" name="subject" value="{{ feedback_item.subject }}" required>
-
-        <label class="label">Semester</label>
-        <input type="text" name="semester" value="{{ feedback_item.semester }}" required>
+        <label class="label">Course Code</label>
+        <select name="course_code" required>
+            <option value="">Select course code</option>
+            {% for item in subject_catalog %}
+                <option value="{{ item.course_code }}" {{ 'selected' if item.course_code == feedback_item.course_code else '' }}>
+                    {{ item.course_code }} - {{ item.subject_name }} (Sem {{ item.semester }})
+                </option>
+            {% endfor %}
+        </select>
 
         <label class="label">Reason</label>
-        <input type="text" name="reason" value="{{ feedback_item.reason }}" required>
+        <select name="reason" required>
+            <option value="">Select primary reason</option>
+            {% for tag in fixed_feedback_tags %}
+                <option value="{{ tag }}" {{ 'selected' if tag == feedback_item.reason else '' }}>
+                    {{ tag.replace('_', ' ')|title }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <label class="label">Feedback Tags</label>
+        <select id="feedbackTagDropdown" class="tag-dropdown-select">
+            <option value="">-- Select a tag to add --</option>
+            {% for tag in fixed_feedback_tags %}
+                <option value="{{ tag }}" data-label="{{ tag.replace('_', ' ')|title }}">
+                    {{ tag.replace('_', ' ')|title }}
+                </option>
+            {% endfor %}
+        </select>
+        <div class="tag-chip-bar" id="feedbackTagChipBar"></div>
+        <div id="feedbackTagInputs"></div>
+        <small style="color:var(--muted); display:block; margin-top:4px;">Pick tags from the dropdown; click x on a tag chip to remove.</small>
+
+        <label class="label">Class Session Date/Time</label>
+        <input
+            type="datetime-local"
+            name="class_session_at"
+            value="{{ feedback_item.class_session_at|ist_datetime('%Y-%m-%dT%H:%M') if feedback_item.class_session_at else '' }}"
+            data-review-session-time
+            required
+        >
+        <small style="color:var(--muted); display:block; margin-top:4px;">Monday-Saturday only, 08:00 AM to 05:00 PM (IST).</small>
 
         <label class="label">Review Text</label>
-        <textarea name="feedback_text" required>{{ feedback_item.feedback_text }}</textarea>
+        <textarea name="feedback_text" id="feedbackText" required>{{ feedback_item.feedback_text }}</textarea>
+
+        <div class="sentiment-preview-row">
+            <button class="btn" type="button" id="sentimentPreviewBtn"><i data-lucide="brain"></i> Preview NLP Sentiment</button>
+            <span class="sentiment-preview-pill" id="sentimentPreviewPill">No preview yet</span>
+        </div>
 
         <div class="flex" style="margin-top:14px;">
             <button class="btn primary" type="submit">Save Changes</button>
@@ -32,4 +71,159 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.tag-chip-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tag-chip-bar:empty::before {
+    content: 'No tags selected yet';
+    color: var(--muted);
+    font-size: 0.82rem;
+    align-self: center;
+}
+
+.feedback-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #c7d2fe;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.feedback-tag-chip button {
+    background: none;
+    border: none;
+    color: #c7d2fe;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.95rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.feedback-tag-chip button:hover {
+    opacity: 1;
+}
+</style>
+<script>
+(() => {
+    const form = document.querySelector('.card form[method="post"]');
+    const feedbackText = document.getElementById('feedbackText');
+    const previewButton = document.getElementById('sentimentPreviewBtn');
+    const previewPill = document.getElementById('sentimentPreviewPill');
+    const tagDropdown = document.getElementById('feedbackTagDropdown');
+    const tagChipBar = document.getElementById('feedbackTagChipBar');
+    const tagInputs = document.getElementById('feedbackTagInputs');
+    const initialTags = {{ selected_tags|tojson }};
+    const selectedTags = new Set();
+
+    const toLabel = (value) => value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const removeTag = (value) => {
+        selectedTags.delete(value);
+        const chip = tagChipBar.querySelector(`[data-value="${value}"]`);
+        if (chip) {
+            chip.remove();
+        }
+        const hidden = document.getElementById(`feedback-tag-hidden-${value}`);
+        if (hidden) {
+            hidden.remove();
+        }
+    };
+
+    const addTag = (value, label) => {
+        if (!value || selectedTags.has(value)) {
+            return;
+        }
+
+        selectedTags.add(value);
+
+        const chip = document.createElement('span');
+        chip.className = 'feedback-tag-chip';
+        chip.dataset.value = value;
+        chip.innerHTML = `${label} <button type="button" aria-label="Remove ${label}">x</button>`;
+        chip.querySelector('button').addEventListener('click', () => removeTag(value));
+        tagChipBar.appendChild(chip);
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'feedback_tags';
+        hidden.value = value;
+        hidden.id = `feedback-tag-hidden-${value}`;
+        tagInputs.appendChild(hidden);
+    };
+
+    if (tagDropdown) {
+        tagDropdown.addEventListener('change', () => {
+            const option = tagDropdown.options[tagDropdown.selectedIndex];
+            if (option && option.value) {
+                addTag(option.value, option.textContent.trim());
+                tagDropdown.selectedIndex = 0;
+            }
+        });
+    }
+
+    if (Array.isArray(initialTags)) {
+        initialTags.forEach((tag) => {
+            const option = tagDropdown ? tagDropdown.querySelector(`option[value="${tag}"]`) : null;
+            addTag(tag, option ? option.textContent.trim() : toLabel(tag));
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            if (selectedTags.size === 0) {
+                event.preventDefault();
+                previewPill.textContent = 'Select at least one feedback tag.';
+                previewPill.style.color = '#fb7185';
+                if (tagDropdown) {
+                    tagDropdown.focus();
+                }
+            }
+        });
+    }
+
+    const sentimentPreview = async () => {
+        const text = (feedbackText?.value || '').trim();
+        if (!text) {
+            previewPill.textContent = 'Enter feedback text first';
+            return;
+        }
+        previewPill.textContent = 'Analyzing...';
+        try {
+            const response = await fetch('{{ url_for("student.sentiment_preview") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            if (!response.ok) throw new Error('failed');
+            const result = await response.json();
+            const label = (result.sentiment || 'neutral').toLowerCase();
+            const confidence = parseInt(result.confidence || '0', 10) || 0;
+            previewPill.textContent = `Detected: ${label.charAt(0).toUpperCase() + label.slice(1)} (${confidence}% confidence)`;
+        } catch (_) {
+            previewPill.textContent = 'Preview unavailable right now';
+        }
+    };
+
+    if (previewButton) previewButton.addEventListener('click', sentimentPreview);
+})();
+</script>
 {% endblock %}

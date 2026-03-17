@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% block title %}Experiences | ClarifAI{% endblock %}
+{% block page_title %}Experiences{% endblock %}
+{% block content %}
+<section class="student-flow-shell experience-shell">
+    <div class="flow-breadcrumb">Community <span>/</span> Experiences</div>
+
+    <div class="space-between" style="margin-bottom:12px; align-items:flex-end; gap:12px;">
+        <div>
+            <h2 style="margin:0;">Anonymous Student Experiences</h2>
+            <p class="chart-subtitle">Learn from peer journeys, practical tips, and real problem-solving stories.</p>
+        </div>
+        {% if session.get('role') == 'student' %}
+        <div class="flex" style="gap:8px;">
+            <a class="btn primary" href="{{ url_for('student.create_experience') }}"><i data-lucide="plus"></i> Share Experience</a>
+            <a class="btn" href="{{ url_for('student.my_experiences') }}"><i data-lucide="notebook-pen"></i> My Experiences</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <form class="card board-filter-card experience-filter-card" method="get" action="{{ url_for('student.experience_feed') }}">
+        <div class="student-reviews-filter-grid">
+            <div>
+                <label class="label">Category</label>
+                <select name="category">
+                    <option value="all" {{ 'selected' if selected_category == 'all' else '' }}>All Categories</option>
+                    {% for c in experience_categories %}
+                    <option value="{{ c }}" {{ 'selected' if selected_category == c else '' }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Tag</label>
+                <select name="tag">
+                    <option value="all" {{ 'selected' if selected_tag == 'all' else '' }}>All Tags</option>
+                    {% for t in experience_tags %}
+                    <option value="{{ t }}" {{ 'selected' if selected_tag == t else '' }}>{{ labelize_exp_tag(t) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Sort</label>
+                <select name="sort">
+                    <option value="recent" {{ 'selected' if sort_by == 'recent' else '' }}>Most Recent</option>
+                    <option value="upvotes" {{ 'selected' if sort_by == 'upvotes' else '' }}>Most Upvoted</option>
+                </select>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:8px;">
+                <button class="btn primary" type="submit"><i data-lucide="filter"></i> Apply</button>
+                <a class="btn" href="{{ url_for('student.experience_feed') }}"><i data-lucide="rotate-ccw"></i> Reset</a>
+            </div>
+        </div>
+    </form>
+
+    {% if own_pending and session.get('role') == 'student' %}
+    <div class="card experience-pending-card" style="margin-bottom:14px;">
+        <h3 style="margin-top:0;">Your Pending / Rejected Submissions</h3>
+        <div class="table-wrap">
+            <table class="student-reviews-table">
+                <thead>
+                    <tr>
+                        <th>Anon ID</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Admin Note</th>
+                        <th>Submitted At (IST)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in own_pending %}
+                    <tr>
+                        <td><span class="badge badge-soft">{{ exp.anon_id }}</span></td>
+                        <td>{{ exp.title }}</td>
+                        <td><span class="badge {{ 'badge-danger' if exp.status == 'rejected' else ('badge-warning' if exp.status == 'pending' else 'badge-info') }}">{{ exp.status.replace('_', ' ')|title }}</span></td>
+                        <td>{{ exp.admin_note or '-' }}</td>
+                        <td>{{ exp.created_at_ist|ist_datetime('%d-%m-%Y %I:%M %p') if exp.created_at_ist else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid-2">
+        {% for exp in experiences %}
+        <article class="card board-entry-card experience-card">
+            <div class="space-between" style="align-items:flex-start; gap:8px;">
+                <div>
+                    <h3 style="margin:0 0 6px;">{{ exp.title }}</h3>
+                    <div class="flow-breadcrumb" style="margin:0;">{{ exp.anon_id }} <span>/</span> {{ exp.category }}</div>
+                </div>
+                <span class="badge badge-soft experience-sentiment-pill">{{ exp.sentiment|title }}</span>
+            </div>
+            <p class="experience-body-preview" style="margin-top:10px; white-space:pre-wrap;">{{ exp.body[:500] }}{% if exp.body|length > 500 %}...{% endif %}</p>
+            <div class="board-entry-tags" style="margin:10px 0;">
+                {% for tag in (exp.tags or '').split(',') if tag %}
+                <span class="tag-pill">{{ labelize_exp_tag(tag) }}</span>
+                {% endfor %}
+            </div>
+            {% if exp.resource_links %}
+            <p class="chart-subtitle" style="margin:8px 0 10px;"><strong>Resources:</strong> Added in detail view</p>
+            {% endif %}
+            <div class="space-between board-entry-meta experience-meta-row" style="gap:8px; align-items:center;">
+                <small>{{ exp.created_at_ist|ist_datetime('%d %b %Y, %I:%M %p') if exp.created_at_ist else '-' }} IST</small>
+                <div class="flex" style="gap:8px; align-items:center;">
+                    <button
+                        class="btn"
+                        type="button"
+                        data-open-experience-detail
+                        data-detail-url="{{ url_for('student.experience_detail', exp_id=exp.id) }}"
+                    >
+                        <i data-lucide="expand"></i> Open
+                    </button>
+                    <form method="post" action="{{ url_for('student.upvote_experience', exp_id=exp.id) }}">
+                        <button class="btn" type="submit"><i data-lucide="thumbs-up"></i> {{ exp.upvote_count }} {% if exp.id in upvoted_ids %}Upvoted{% else %}Upvote{% endif %}</button>
+                    </form>
+                    <button class="btn" type="button" data-open-modal="reportModal{{ exp.id }}"><i data-lucide="flag"></i> Report</button>
+                </div>
+            </div>
+        </article>
+
+        <div class="modal" id="reportModal{{ exp.id }}">
+            <div class="modal-card experience-report-modal">
+                <div class="space-between">
+                    <h3 style="margin:0;">Report {{ exp.anon_id }}</h3>
+                    <button class="btn" type="button" data-close-modal><i data-lucide="x"></i></button>
+                </div>
+                <form method="post" action="{{ url_for('student.report_experience', exp_id=exp.id) }}" style="margin-top:12px;">
+                    <label class="label">Category</label>
+                    <select name="report_category" required>
+                        <option value="">Select report category</option>
+                        {% for c in experience_report_categories %}
+                        <option value="{{ c }}">{{ c }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="label">Reason (min 20 chars)</label>
+                    <textarea name="reason" minlength="20" maxlength="1000" required placeholder="Please explain why this post should be reviewed."></textarea>
+
+                    <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+                        <button class="btn danger" type="submit"><i data-lucide="shield-alert"></i> Submit Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="card"><p>No approved experiences found for selected filters.</p></div>
+        {% endfor %}
+    </div>
+
+    <div class="modal intervention-detail-modal" id="experienceDetailModal">
+        <div class="modal-card intervention-detail-card experience-create-modal">
+            <div class="space-between" style="gap:10px; align-items:flex-start;">
+                <div>
+                    <h3 id="experienceDetailTitle" style="margin:0;">Experience Details</h3>
+                    <p id="experienceDetailMeta" class="chart-subtitle" style="margin:6px 0 0;">Loading...</p>
+                </div>
+                <button class="btn" type="button" data-close-modal><i data-lucide="x"></i></button>
+            </div>
+
+            <div class="intervention-detail-target" id="experienceDetailTags" style="margin-top:10px;"></div>
+
+            <div class="intervention-detail-section">
+                <h4>Experience</h4>
+                <p id="experienceDetailBody" style="white-space:pre-wrap;">Loading content...</p>
+            </div>
+
+            <div class="intervention-detail-section" id="experienceLinksWrap" hidden>
+                <h4>Resource Links</h4>
+                <div class="intervention-detail-links" id="experienceDetailLinks"></div>
+            </div>
+
+            <div class="intervention-detail-section">
+                <div class="intervention-detail-metrics">
+                    <span><i data-lucide="thumbs-up"></i> Upvotes: <strong id="experienceDetailUpvotes">0</strong></span>
+                    <span><i data-lucide="brain"></i> Polarity: <strong id="experienceDetailSentiment">-</strong></span>
+                    <span><i data-lucide="badge-percent"></i> Confidence: <strong id="experienceDetailConfidence">0%</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const detailModal = document.getElementById('experienceDetailModal');
+    const detailTitle = document.getElementById('experienceDetailTitle');
+    const detailMeta = document.getElementById('experienceDetailMeta');
+    const detailTags = document.getElementById('experienceDetailTags');
+    const detailBody = document.getElementById('experienceDetailBody');
+    const linksWrap = document.getElementById('experienceLinksWrap');
+    const linksList = document.getElementById('experienceDetailLinks');
+    const upvotesNode = document.getElementById('experienceDetailUpvotes');
+    const sentimentNode = document.getElementById('experienceDetailSentiment');
+    const confidenceNode = document.getElementById('experienceDetailConfidence');
+    const triggerButtons = Array.from(document.querySelectorAll('[data-open-experience-detail]'));
+
+    if (!detailModal || !triggerButtons.length) {
+        return;
+    }
+
+    const resetDetail = () => {
+        detailTitle.textContent = 'Experience Details';
+        detailMeta.textContent = 'Loading...';
+        detailBody.textContent = 'Loading content...';
+        detailTags.innerHTML = '';
+        linksList.innerHTML = '';
+        linksWrap.hidden = true;
+        upvotesNode.textContent = '0';
+        sentimentNode.textContent = '-';
+        confidenceNode.textContent = '0%';
+    };
+
+    const renderLinks = (links) => {
+        linksList.innerHTML = '';
+        if (!Array.isArray(links) || !links.length) {
+            linksWrap.hidden = true;
+            return;
+        }
+
+        linksWrap.hidden = false;
+        links.forEach((link) => {
+            const row = document.createElement('div');
+            row.className = 'intervention-attachment-row';
+
+            const name = document.createElement('span');
+            name.textContent = link;
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+
+            const openBtn = document.createElement('a');
+            openBtn.className = 'btn primary';
+            openBtn.href = link;
+            openBtn.target = '_blank';
+            openBtn.rel = 'noopener';
+            openBtn.textContent = 'Open Link';
+
+            actions.appendChild(openBtn);
+            row.appendChild(name);
+            row.appendChild(actions);
+            linksList.appendChild(row);
+        });
+    };
+
+    const renderTags = (payload) => {
+        detailTags.innerHTML = '';
+        const chips = [];
+
+        chips.push(`ID: ${payload.anon_id || '-'}`);
+        chips.push(`Category: ${payload.category || '-'}`);
+        if (Array.isArray(payload.tags)) {
+            payload.tags.forEach((tag) => chips.push(tag));
+        }
+
+        chips.forEach((text) => {
+            const chip = document.createElement('span');
+            chip.className = 'tag-pill';
+            chip.textContent = text;
+            detailTags.appendChild(chip);
+        });
+    };
+
+    const renderPayload = (payload) => {
+        detailTitle.textContent = payload.title || 'Experience Details';
+        detailMeta.textContent = `${payload.created_at_ist || '-'} IST`;
+        detailBody.textContent = payload.body || '';
+        renderTags(payload || {});
+        renderLinks(payload.resource_links || []);
+        upvotesNode.textContent = String(payload.upvote_count || 0);
+
+        const sentiment = (payload.sentiment || 'neutral').toLowerCase();
+        const sentimentLabel = sentiment.charAt(0).toUpperCase() + sentiment.slice(1);
+        sentimentNode.textContent = sentimentLabel;
+        confidenceNode.textContent = `${parseInt(payload.sentiment_confidence || '0', 10) || 0}%`;
+    };
+
+    triggerButtons.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const detailUrl = button.getAttribute('data-detail-url');
+            if (!detailUrl) {
+                return;
+            }
+
+            resetDetail();
+            detailModal.classList.add('active');
+
+            try {
+                const response = await fetch(detailUrl, { headers: { Accept: 'application/json' } });
+                if (!response.ok) {
+                    throw new Error('failed');
+                }
+                const payload = await response.json();
+                renderPayload(payload || {});
+            } catch (_) {
+                detailTitle.textContent = 'Unable to load details';
+                detailMeta.textContent = 'Try again';
+                detailBody.textContent = 'We could not fetch experience details right now.';
+            }
+
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Website Suggestions | ClarifAI{% endblock %}
+{% block page_title %}Website Suggestions{% endblock %}
+{% block content %}
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Website Suggestions</div>
+
+    <div class="admin-head-row" style="margin-bottom:12px;">
+        <div>
+            <h3 style="margin:0;">Website Suggestions</h3>
+            <p class="chart-subtitle">Monitor public website contact submissions and track unread/new requests.</p>
+        </div>
+        <span class="audit-chip warning">{{ unread_count }} new</span>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card kpi-blue"><h3>{{ filtered_total }}</h3><p>Filtered Results</p></article>
+        <article class="card admin-kpi-card kpi-teal"><h3>{{ unread_count }}</h3><p>Unread / New</p></article>
+        <article class="card admin-kpi-card kpi-violet"><h3>{{ read_count }}</h3><p>Read</p></article>
+        <article class="card admin-kpi-card kpi-amber"><h3>{{ unique_senders }}</h3><p>Unique Senders</p></article>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row" style="grid-template-columns:minmax(0, 1fr) 220px auto auto;">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by name, email, or message...">
+            <select name="status">
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All Statuses</option>
+                <option value="new" {{ 'selected' if status == 'new' else '' }}>New / Unread</option>
+                <option value="read" {{ 'selected' if status == 'read' else '' }}>Read</option>
+            </select>
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('admin.suggestions_page') }}">Reset</a>
+        </form>
+    </article>
+
+    <article class="card admin-panel">
+        <div class="admin-audit-list">
+            {% for item in feedback_items %}
+                <div class="admin-audit-item">
+                    <div class="space-between admin-suggestion-head" style="align-items:flex-start; gap:10px;">
+                        <div>
+                            <strong>{{ item.visitor_name }}</strong>
+                            <small>{{ item.visitor_email }} · {{ item.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                        </div>
+                        <div class="admin-suggestion-actions">
+                            {% if item.is_read %}
+                                <span class="audit-chip approve">Read</span>
+                            {% else %}
+                                <span class="audit-chip warning">New</span>
+                            {% endif %}
+
+                            <form method="post" action="{{ url_for('admin.mark_suggestion', feedback_id=item.id) }}" class="admin-suggestion-mark-form">
+                                <input type="hidden" name="next_url" value="{{ request.full_path }}">
+                                {% if item.is_read %}
+                                    <input type="hidden" name="action" value="unread">
+                                    <button class="btn" type="submit"><i data-lucide="mail"></i> Mark as New</button>
+                                {% else %}
+                                    <input type="hidden" name="action" value="read">
+                                    <button class="btn primary" type="submit"><i data-lucide="mail-open"></i> Mark as Read</button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+
+                    <p>{{ item.message }}</p>
+                </div>
+            {% else %}
+                <p class="chart-subtitle" style="margin:0;">No website suggestions found for current filters.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

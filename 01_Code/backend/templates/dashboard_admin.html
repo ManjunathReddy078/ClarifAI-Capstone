@@ -2,105 +2,179 @@
 {% block title %}Admin Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Admin Dashboard{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
-    <div>
-        <h3 style="margin:0;">Admin Governance Dashboard</h3>
-        <p class="chart-subtitle">Moderation governance, user management, and policy compliance</p>
-    </div>
-    <div class="student-hero-actions">
-        <a class="btn" href="{{ url_for('admin.moderation_page') }}">Moderation Queue</a>
-        <a class="btn primary" href="{{ url_for('admin.users') }}">User Management</a>
-    </div>
-</div>
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Dashboard</div>
 
-<div class="grid-4" style="margin-bottom:14px;">
-    <div class="card modern-stat"><small>Moderation Queue</small><h3>{{ pending_feedback|length }}</h3></div>
-    <div class="card modern-stat"><small>Total Users</small><h3>{{ user_counts.students + user_counts.faculty + user_counts.admins }}</h3></div>
-    <div class="card modern-stat"><small>Active Accounts</small><h3>{{ user_counts.active }}</h3></div>
-    <div class="card modern-stat"><small>Audit Logs</small><h3>{{ moderation_logs|length }}</h3></div>
-</div>
-
-<div class="grid-3" style="margin-bottom:14px;">
-    <div class="card" style="grid-column: span 2;">
-        <div class="space-between" style="margin-bottom:10px;">
-            <h3 style="margin:0;">Pending Moderation</h3>
-            <a class="btn" href="{{ url_for('admin.moderation_page') }}">Review All</a>
+    <div class="admin-head-row" style="margin-bottom:18px;">
+        <div>
+            <h3 style="margin:0;">Admin Dashboard</h3>
+            <p class="chart-subtitle">Moderation governance, user management, and policy compliance overview.</p>
         </div>
-        {% for item in pending_feedback[:4] %}
-            <div style="border-bottom:1px solid var(--border); padding:10px 0;">
-                <div class="space-between" style="align-items:flex-start; gap:10px;">
-                    <div>
-                        <strong>{{ item.subject }}</strong>
-                        <div style="color:var(--muted);">{{ item.reason }} · {{ item.semester }}</div>
-                        <p style="margin:6px 0 0; color:var(--muted);">{{ item.feedback_text[:140] }}{% if item.feedback_text|length > 140 %}...{% endif %}</p>
-                    </div>
-                    <span class="badge under_review">{{ item.sentiment|title }}</span>
-                </div>
-            </div>
-        {% else %}
-            <p>No under-review feedback in queue.</p>
-        {% endfor %}
-    </div>
-
-    <div class="card">
-        <h3 style="margin-top:0;">Users by Role</h3>
-        <canvas id="adminRoleChart" style="height:210px;"></canvas>
-        <div style="margin-top:10px; color:var(--muted); font-size:.85rem;">
-            Students: {{ user_counts.students }} · Faculty: {{ user_counts.faculty }} · Admins: {{ user_counts.admins }}
+        <div class="flex" style="gap:8px; align-items:center;">
+            <a class="btn" href="{{ url_for('admin.academic_mapping_page') }}"><i data-lucide="network"></i> Academic Mapping</a>
+            <a class="btn" href="{{ url_for('admin.faculty_feedback_holding_page') }}"><i data-lucide="inbox"></i> Faculty Delivery Queue{% if pending_faculty_feedback_count %} <span class="inline-badge">{{ pending_faculty_feedback_count }}</span>{% endif %}</a>
+            <a class="btn" href="{{ url_for('admin.semester_exceptions_page') }}"><i data-lucide="graduation-cap"></i> Semester Exceptions{% if pending_semester_exceptions_count %} <span class="inline-badge">{{ pending_semester_exceptions_count }}</span>{% endif %}</a>
+            <a class="btn" href="{{ url_for('admin.suggestions_page') }}"><i data-lucide="messages-square"></i> Suggestions{% if unread_suggestions_count %} <span class="inline-badge">{{ unread_suggestions_count }}</span>{% endif %}</a>
+            <a class="btn primary" href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation Queue</a>
         </div>
     </div>
-</div>
 
-<div class="card chart-card" style="margin-bottom:14px;">
-    <h3 style="margin-top:0;">Department Feedback Volume Trend</h3>
-    <p class="chart-subtitle">Monthly submission counts by sentiment category</p>
-    <canvas id="adminTrendChart"></canvas>
-</div>
-
-<div class="grid-2" style="margin-bottom:14px;">
-    <div class="card">
-        <h3 style="margin-top:0;">Manual Password Reset</h3>
-        <form method="post" action="{{ url_for('admin.manual_reset_password') }}">
-            <label class="label">User Email</label>
-            <input type="email" name="email" required>
-
-            <label class="label">New Password</label>
-            <input type="password" name="new_password" required>
-
-            <div style="margin-top:14px;">
-                <button class="btn primary" type="submit">Reset Password</button>
-            </div>
-        </form>
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card kpi-amber">
+            <small>Moderation Queue</small>
+            <h3>{{ pending_feedback|length }}</h3>
+            <p>Awaiting review</p>
+        </article>
+        <article class="card admin-kpi-card kpi-violet">
+            <small>Total Users</small>
+            <h3>{{ user_counts.students + user_counts.faculty + user_counts.admins }}</h3>
+            <p>Across all roles</p>
+        </article>
+        <article class="card admin-kpi-card kpi-teal">
+            <small>Feedback Processed</small>
+            <h3>{{ policy_stats.ack_rate }}%</h3>
+            <p>Policy acknowledgment rate</p>
+        </article>
+        <article class="card admin-kpi-card kpi-blue">
+            <small>New Suggestions</small>
+            <h3>{{ unread_suggestions_count }}</h3>
+            <p>Unread website contact requests</p>
+        </article>
+        <article class="card admin-kpi-card kpi-amber">
+            <small>Semester Exceptions</small>
+            <h3>{{ pending_semester_exceptions_count }}</h3>
+            <p>Pending verification requests</p>
+        </article>
     </div>
 
-    <div class="card">
-        <h3 style="margin-top:0;">Recent Audit Actions</h3>
-        {% for log in moderation_logs[:8] %}
-            <div style="border-bottom:1px solid var(--border); padding:8px 0;">
-                <strong>{{ log.action.replace('_', ' ')|title }}</strong>
-                <div style="color:var(--muted);">By {{ log.admin.full_name }} on {{ log.created_at.strftime('%d %b %Y %I:%M %p') }}</div>
-                {% if log.note %}<div style="color:var(--muted);">{{ log.note }}</div>{% endif %}
-            </div>
-        {% else %}
-            <p>No moderation logs yet.</p>
-        {% endfor %}
-    </div>
-</div>
+    <article class="card admin-panel" style="margin-bottom:14px;">
+        <div class="space-between" style="margin-bottom:10px; align-items:flex-end; gap:10px;">
+            <h3 style="margin:0;">Pending Moderation <span class="audit-chip warning">{{ pending_feedback|length }} items</span></h3>
+            <a class="subtle-link" href="{{ url_for('admin.moderation_page') }}">Review all</a>
+        </div>
 
-<div class="card">
-    <h3 style="margin-top:0;">Recent Registrations</h3>
-    {% for user in recent_users %}
-        <div style="border-bottom:1px solid var(--border); padding:8px 0;" class="space-between">
+        <div class="table-wrap">
+            <table class="table admin-user-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Student</th>
+                        <th>Faculty</th>
+                        <th>Sentiment</th>
+                        <th>Submitted</th>
+                        <th>Preview</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pending_feedback %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.subject }}</strong>
+                            <small class="chart-subtitle" style="display:block;">{{ item.reason }} · Sem {{ item.semester }}</small>
+                        </td>
+                        <td>{{ item.student.full_name if item.student else '-' }}</td>
+                        <td>{{ item.faculty.full_name if item.faculty else '-' }}</td>
+                        <td><span class="admin-sentiment-pill {{ item.sentiment }}">{{ item.sentiment|title }}</span></td>
+                        <td>{{ item.created_at|ist_datetime('%d %b %Y %I:%M %p') if item.created_at else '-' }}</td>
+                        <td>{{ item.feedback_text[:140] }}{% if item.feedback_text|length > 140 %}...{% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="chart-subtitle">No under-review feedback in queue.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <div class="grid-2" style="margin-bottom:14px;">
+        {% set role_total = (user_counts.students + user_counts.faculty + user_counts.admins) or 1 %}
+        <article class="card admin-panel">
+            <h3 style="margin:0 0 8px;">Users by Role</h3>
+            <div class="admin-role-metric">
+                <span>Students</span>
+                <strong>{{ user_counts.students }}</strong>
+            </div>
+            <div class="admin-role-track"><span style="width: {{ (user_counts.students * 100 / role_total)|round(0, 'floor') }}%;"></span></div>
+
+            <div class="admin-role-metric">
+                <span>Faculty</span>
+                <strong>{{ user_counts.faculty }}</strong>
+            </div>
+            <div class="admin-role-track"><span style="width: {{ (user_counts.faculty * 100 / role_total)|round(0, 'floor') }}%;"></span></div>
+
+            <div class="admin-role-metric">
+                <span>Admins</span>
+                <strong>{{ user_counts.admins }}</strong>
+            </div>
+            <div class="admin-role-track"><span style="width: {{ (user_counts.admins * 100 / role_total)|round(0, 'floor') }}%;"></span></div>
+
+            <a class="subtle-link" style="margin-top:10px; display:inline-flex;" href="{{ url_for('admin.users') }}">Manage Users</a>
+        </article>
+
+        <article class="card admin-panel">
+            <h3 style="margin:0 0 8px;">Policy Compliance</h3>
+            <p class="chart-subtitle" style="margin:0 0 8px;">Platform health checks based on moderation and account activity.</p>
+            <div class="admin-policy-row">
+                <span>Feedback policy acknowledgment rate</span>
+                <strong class="good">{{ policy_stats.ack_rate }}%</strong>
+            </div>
+            <div class="admin-policy-row">
+                <span>Moderation SLA (&lt; 4h response)</span>
+                <strong class="good">{{ policy_stats.sla_rate }}%</strong>
+            </div>
+            <div class="admin-policy-row">
+                <span>Pending items &gt; 72h</span>
+                <strong class="warn">{{ policy_stats.pending }}</strong>
+            </div>
+            <div class="admin-policy-row">
+                <span>Active user accounts</span>
+                <strong class="good">{{ policy_stats.active_accounts }}%</strong>
+            </div>
+        </article>
+    </div>
+
+    <article class="card chart-card" style="margin-bottom:14px;">
+        <div class="space-between" style="gap:10px; align-items:flex-end; margin-bottom:8px;">
             <div>
-                <strong>{{ user.full_name }}</strong>
-                <div style="color:var(--muted);">{{ user.email }} · {{ user.role|title }}</div>
+                <h3 style="margin:0;">Department Feedback Volume Trend</h3>
+                <p class="chart-subtitle" style="margin:6px 0 0;">Monthly submission counts by sentiment category (last {{ trend_months }} months)</p>
             </div>
-            <span class="badge {{ 'approved' if user.is_active else 'rejected' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+            <form method="get" class="flex" style="gap:8px; align-items:flex-end;">
+                <div>
+                    <label class="label" style="margin-bottom:4px;">Duration</label>
+                    <select name="trend_months">
+                        <option value="3" {{ 'selected' if trend_months == 3 else '' }}>Last 3 Months</option>
+                        <option value="6" {{ 'selected' if trend_months == 6 else '' }}>Last 6 Months</option>
+                        <option value="12" {{ 'selected' if trend_months == 12 else '' }}>Last 12 Months</option>
+                    </select>
+                </div>
+                <button class="btn" type="submit"><i data-lucide="calendar-range"></i> Apply</button>
+            </form>
         </div>
-    {% else %}
-        <p>No users found.</p>
-    {% endfor %}
-</div>
+        <canvas id="adminTrendChart"></canvas>
+    </article>
+
+    <article class="card admin-panel">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Recent Audit Actions</h3>
+            <a class="subtle-link" href="{{ url_for('admin.audit_log') }}">Full Log</a>
+        </div>
+        <div class="admin-audit-list">
+            {% for log in moderation_logs[:6] %}
+                <div class="admin-audit-item">
+                    <span class="audit-chip {{ log.action }}">{{ log.action.replace('_', ' ')|title }}</span>
+                    <strong>Feedback on {{ log.feedback.subject }} by {{ log.feedback.student.full_name }}</strong>
+                    <small>Performed by {{ log.admin.full_name }} · {{ log.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                    {% if log.note %}<p>"{{ log.note }}"</p>{% endif %}
+                </div>
+            {% else %}
+                <p class="chart-subtitle" style="margin:0;">No moderation logs yet.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -112,42 +186,48 @@
     const textColor = css.getPropertyValue('--text').trim();
     const gridColor = css.getPropertyValue('--border').trim();
 
-    new Chart(document.getElementById('adminRoleChart'), {
-        type: 'doughnut',
-        data: {
-            labels: payload.role_labels,
-            datasets: [{
-                data: payload.role_counts,
-                backgroundColor: ['#6366f1', '#06b6d4', '#a855f7']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: textColor } } }
-        }
-    });
-
-    new Chart(document.getElementById('adminTrendChart'), {
-        type: 'bar',
-        data: {
-            labels: payload.trend_labels,
-            datasets: [
-                { label: 'Positive', data: payload.trend_positive, backgroundColor: '#34d399' },
-                { label: 'Neutral', data: payload.trend_neutral, backgroundColor: '#fbbf24' },
-                { label: 'Negative', data: payload.trend_negative, backgroundColor: '#fb7185' }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: textColor } } },
-            scales: {
-                x: { ticks: { color: textColor }, grid: { color: gridColor } },
-                y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+    const roleCanvas = document.getElementById('adminRoleChart');
+    if (roleCanvas) {
+        new Chart(roleCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: payload.role_labels,
+                datasets: [{
+                    data: payload.role_counts,
+                    backgroundColor: ['#6366f1', '#06b6d4', '#a855f7']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor } } }
             }
-        }
-    });
+        });
+    }
+
+    const trendCanvas = document.getElementById('adminTrendChart');
+    if (trendCanvas) {
+        new Chart(trendCanvas, {
+            type: 'bar',
+            data: {
+                labels: payload.trend_labels,
+                datasets: [
+                    { label: 'Positive', data: payload.trend_positive, backgroundColor: '#34d399' },
+                    { label: 'Neutral', data: payload.trend_neutral, backgroundColor: '#fbbf24' },
+                    { label: 'Negative', data: payload.trend_negative, backgroundColor: '#fb7185' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor } } },
+                scales: {
+                    x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                    y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+                }
+            }
+        });
+    }
 })();
 </script>
 {% endblock %}

@@ -1,17 +1,39 @@
 {% extends 'base.html' %}
 {% block title %}Verify Security Answer | ClarifAI{% endblock %}
 {% block content %}
-<h2 style="margin-top:0;">Password Reset - Step 2</h2>
-<p style="color: var(--muted);">Answer your registered security question.</p>
-<div class="card" style="padding:12px; margin-bottom:12px;">
-    <strong>{{ user.security_question }}</strong>
-</div>
-<form method="post">
-    <label class="label">Security Answer</label>
-    <input type="text" name="security_answer" required>
-    <div class="flex" style="margin-top:14px;">
-        <button class="btn primary" type="submit">Verify</button>
-        <a class="btn" href="{{ url_for('auth.reset_request') }}">Back</a>
-    </div>
-</form>
+<section class="auth-stack-shell">
+    <div class="auth-icon-badge"><i data-lucide="shield-check"></i></div>
+    <h2 class="auth-title auth-title-compact">Password Reset - Step 2</h2>
+    <p class="auth-subtitle">Answer your registered security question.</p>
+
+    <form method="post" id="resetVerifyForm" class="auth-panel auth-form-panel auth-form" autocomplete="off">
+        <div class="auth-question-card">
+            <strong>{{ user.security_question }}</strong>
+        </div>
+
+        <label class="label">Security Answer</label>
+        <div class="password-row compact">
+            <input type="hidden" name="security_answer" id="resetSecurityAnswerHidden" value="">
+            <input type="password" name="security_answer_entry" id="resetSecurityAnswer" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" required>
+            <button class="password-peek-btn" type="button" data-toggle-password="resetSecurityAnswer" aria-label="Show security answer" title="Show security answer"><i data-lucide="eye"></i></button>
+        </div>
+
+        <div class="auth-action-row">
+            <button class="btn primary" type="submit">Verify</button>
+            <a class="btn ghost" href="{{ url_for('auth.reset_request') }}">Back</a>
+        </div>
+    </form>
+</section>
+
+<script>
+const resetVerifyForm = document.getElementById('resetVerifyForm');
+const resetSecurityAnswer = document.getElementById('resetSecurityAnswer');
+const resetSecurityAnswerHidden = document.getElementById('resetSecurityAnswerHidden');
+
+if (resetVerifyForm && resetSecurityAnswer && resetSecurityAnswerHidden) {
+    resetVerifyForm.addEventListener('submit', () => {
+        resetSecurityAnswerHidden.value = resetSecurityAnswer.value;
+    });
+}
+</script>
 {% endblock %}

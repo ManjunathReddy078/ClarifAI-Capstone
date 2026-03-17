@@ -1,119 +1,271 @@
 {% extends 'base.html' %}
 {% block title %}Register | ClarifAI{% endblock %}
 {% block content %}
-<section class="auth-split">
-    <div class="auth-pane">
-        <h2 style="margin-top:0;">Create Your Account</h2>
-        <p style="color: var(--muted);">Whitelist-validated registration for MCA students and faculty only.</p>
+<section class="auth-stack-shell register-layout">
+    <a class="auth-home-link" href="{{ url_for('home') }}" aria-label="Go to home page">
+        <img src="{{ url_for('static', filename='logos/ClarifAI-.png') }}" alt="ClarifAI" class="landing-logo full-logo">
+        <span>ClarifAI</span>
+        <span class="course-chip"><i data-lucide="bot"></i><span>CA</span></span>
+    </a>
+    <h2 class="auth-title">Create Account</h2>
+    <p class="auth-subtitle">Join ClarifAI — Computer Applications Academic Feedback Platform</p>
 
-        <form method="post" id="registerForm" class="auth-form">
-            <div class="grid-2">
-                <div>
-                    <label class="label">Full Name</label>
-                    <input type="text" name="full_name" required>
-                </div>
-                <div>
-                    <label class="label">Email</label>
-                    <input type="email" name="email" required>
-                </div>
+    <form method="post" id="registerForm" class="auth-panel register-panel auth-form">
+        <input type="hidden" name="role" id="roleInput" value="student">
+
+        <label class="label">Select your role</label>
+        <div class="role-toggle-grid">
+            <button type="button" class="btn role-option active" data-role="student">
+                <i data-lucide="graduation-cap"></i> Student
+            </button>
+            <button type="button" class="btn role-option" data-role="faculty">
+                <i data-lucide="user-round"></i> Faculty
+            </button>
+        </div>
+        <small class="helper-text">Admin accounts are created by department admins only.</small>
+
+        <div class="grid-2" style="margin-top:10px;">
+            <div>
+                <label class="label">Full Name *</label>
+                <input type="text" name="full_name" required placeholder="Enter your full name">
             </div>
-
-            <div class="grid-2">
-                <div>
-                    <label class="label">Role</label>
-                    <select name="role" id="roleSelect" required>
-                        <option value="">Select role</option>
-                        <option value="student">Student</option>
-                        <option value="faculty">Faculty</option>
-                        <option value="admin">Admin (manual only)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="label">Course</label>
-                    <input type="text" value="MCA" readonly>
-                </div>
+            <div>
+                <label class="label">Email Address *</label>
+                <input type="email" name="email" required placeholder="your@ca.edu" autocomplete="username">
             </div>
+        </div>
 
-            <div class="grid-2">
-                <div id="prnBlock" style="display:none;">
-                    <label class="label">PRN</label>
-                    <input type="text" name="prn" id="prnInput">
-                </div>
-                <div id="sectionBlock" style="display:none;">
-                    <label class="label">Section</label>
-                    <input type="text" name="section" id="sectionInput">
-                </div>
+        <label class="label">Course *</label>
+        <select name="course" id="courseInput" required>
+            <option value="MCA">MCA</option>
+            <option value="BCA">BCA</option>
+        </select>
+        <small class="helper-text" id="courseDurationHint">MCA duration is 2 years (4 semesters).</small>
+
+        <div class="grid-3 student-row" id="studentRow">
+            <div id="prnBlock">
+                <label class="label">PRN / SRN *</label>
+                <input type="text" name="prn" id="prnInput">
             </div>
-
-            <div id="facultyIdBlock" style="display:none;">
-                <label class="label">Faculty ID</label>
-                <input type="text" name="faculty_id" id="facultyIdInput">
+            <div id="sectionBlock">
+                <label class="label">Section *</label>
+                <select name="section" id="sectionInput">
+                    <option value="">Select</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="D">D</option>
+                    <option value="E">E</option>
+                </select>
             </div>
-
-            <div class="grid-2">
-                <div>
-                    <label class="label">Password</label>
-                    <div class="password-row">
-                        <input type="password" name="password" id="registerPassword" required>
-                        <button class="btn" type="button" data-toggle-password="registerPassword">Peek</button>
-                    </div>
-                </div>
-                <div>
-                    <label class="label">Confirm Password</label>
-                    <div class="password-row">
-                        <input type="password" name="confirm_password" id="registerConfirmPassword" required>
-                        <button class="btn" type="button" data-toggle-password="registerConfirmPassword">Peek</button>
-                    </div>
-                </div>
+            <div id="currentSemesterBlock">
+                <label class="label">Current Semester *</label>
+                <input type="number" name="current_semester" id="currentSemesterInput" min="1" step="1" value="1">
             </div>
+        </div>
 
-            <label class="label">Security Question</label>
-            <select name="security_question" required>
-                <option value="">Select question</option>
-                {% for question in security_questions %}
-                    <option value="{{ question }}">{{ question }}</option>
-                {% endfor %}
+        <div class="grid-3 student-row" id="academicDurationRow">
+            <div>
+                <label class="label">Academic Start Year *</label>
+                <input type="number" name="batch_start_year" id="batchStartYearInput" placeholder="2025" min="2000" max="2100">
+            </div>
+            <div>
+                <label class="label">Academic End Year *</label>
+                <input type="number" name="batch_end_year" id="batchEndYearInput" placeholder="2028" min="2001" max="2105">
+            </div>
+            <div>
+                <label class="label">Admission Year *</label>
+                <input type="number" name="admission_year" id="admissionYearInput" placeholder="2025" min="2000" max="2100">
+            </div>
+        </div>
+
+        <div class="student-row" id="admissionMonthRow" style="margin-top:8px;">
+            <label class="label">Admission Month *</label>
+            <select name="admission_month" id="admissionMonthInput">
+                <option value="">Select</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
             </select>
+        </div>
 
-            <label class="label">Security Answer</label>
-            <input type="text" name="security_answer" required>
+        <div id="facultyIdBlock" style="display:none; margin-top:8px;">
+            <label class="label">Faculty ID *</label>
+            <input type="text" name="faculty_id" id="facultyIdInput" placeholder="FACMC001">
+        </div>
 
-            <div class="flex" style="margin-top:16px; flex-direction:column; align-items:stretch;">
-                <button class="btn primary" type="submit">Register</button>
-                <a style="color:var(--accent-2); text-decoration:none; text-align:center;" href="{{ url_for('auth.login') }}">Already have an account? Sign In</a>
+        <div class="grid-2">
+            <div>
+                <label class="label">Password *</label>
+                <div class="password-row compact">
+                    <input type="password" name="password" id="registerPassword" autocomplete="new-password" required>
+                    <button class="password-peek-btn" type="button" data-toggle-password="registerPassword" aria-label="Show password" title="Show password"><i data-lucide="eye"></i></button>
+                </div>
             </div>
-        </form>
-    </div>
+            <div>
+                <label class="label">Confirm Password *</label>
+                <div class="password-row compact">
+                    <input type="password" name="confirm_password" id="registerConfirmPassword" autocomplete="new-password" required>
+                    <button class="password-peek-btn" type="button" data-toggle-password="registerConfirmPassword" aria-label="Show password" title="Show password"><i data-lucide="eye"></i></button>
+                </div>
+            </div>
+        </div>
 
-    <div class="auth-visual card floating-soft">
-        <img src="{{ url_for('static', filename='logos/ClarifAI_transparent-.png') }}" alt="ClarifAI">
-    </div>
+        <label class="label">Security Question *</label>
+        <select name="security_question" required>
+            <option value="">Select question</option>
+            {% for question in security_questions %}
+                <option value="{{ question }}">{{ question }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="label">Security Answer *</label>
+        <div class="password-row compact">
+            <input type="password" name="security_answer" id="registerSecurityAnswer" autocomplete="new-password" autocapitalize="off" spellcheck="false" required>
+            <button class="password-peek-btn" type="button" data-toggle-password="registerSecurityAnswer" aria-label="Show security answer" title="Show security answer"><i data-lucide="eye"></i></button>
+        </div>
+
+        <button class="btn primary full" type="submit" style="margin-top:16px;">Continue →</button>
+        <p class="auth-help-text">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+    </form>
 </section>
 
 <script>
-const roleSelect = document.getElementById('roleSelect');
+const roleInput = document.getElementById('roleInput');
+const roleButtons = Array.from(document.querySelectorAll('.role-option'));
+const studentRow = document.getElementById('studentRow');
 const prnBlock = document.getElementById('prnBlock');
 const sectionBlock = document.getElementById('sectionBlock');
 const facultyIdBlock = document.getElementById('facultyIdBlock');
 const prnInput = document.getElementById('prnInput');
 const sectionInput = document.getElementById('sectionInput');
 const facultyIdInput = document.getElementById('facultyIdInput');
+const currentSemesterBlock = document.getElementById('currentSemesterBlock');
+const academicDurationRow = document.getElementById('academicDurationRow');
+const admissionMonthRow = document.getElementById('admissionMonthRow');
+const batchStartYearInput = document.getElementById('batchStartYearInput');
+const batchEndYearInput = document.getElementById('batchEndYearInput');
+const admissionYearInput = document.getElementById('admissionYearInput');
+const admissionMonthInput = document.getElementById('admissionMonthInput');
+const currentSemesterInput = document.getElementById('currentSemesterInput');
+const courseInput = document.getElementById('courseInput');
+const courseDurationHint = document.getElementById('courseDurationHint');
 
-function syncRoleFields() {
-    const role = roleSelect.value;
+const courseMeta = {{ course_meta|tojson }};
+
+function updateCourseHint() {
+    const course = (courseInput?.value || 'MCA').toUpperCase();
+    const item = courseMeta[course] || { duration_years: 2, total_semesters: 4, semesters_per_year: 2 };
+    courseDurationHint.textContent = `${course} duration is ${item.duration_years} years (${item.total_semesters} semesters).`;
+}
+
+function toInt(value, fallback) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function calculateSuggestedSemester() {
+    const course = (courseInput?.value || 'MCA').toUpperCase();
+    const item = courseMeta[course] || { total_semesters: 4, semesters_per_year: 2 };
+    const totalSemesters = toInt(item.total_semesters, 4);
+    const semestersPerYear = Math.max(1, toInt(item.semesters_per_year, 2));
+    const admissionYear = toInt(admissionYearInput?.value, 0);
+    const admissionMonth = toInt(admissionMonthInput?.value, 0);
+
+    if (admissionYear <= 0 || admissionMonth < 1 || admissionMonth > 12) {
+        return 1;
+    }
+
+    const now = new Date();
+    let monthsElapsed = (now.getFullYear() - admissionYear) * 12 + ((now.getMonth() + 1) - admissionMonth);
+    monthsElapsed = Math.max(0, monthsElapsed);
+    const monthsPerSemester = Math.max(1, Math.round(12 / semestersPerYear));
+    const predicted = 1 + Math.floor(monthsElapsed / monthsPerSemester);
+    return Math.min(totalSemesters, Math.max(1, predicted));
+}
+
+function updateSemesterField(forceSuggested = false) {
+    const course = (courseInput?.value || 'MCA').toUpperCase();
+    const item = courseMeta[course] || { total_semesters: 4 };
+    const totalSemesters = toInt(item.total_semesters, 4);
+    currentSemesterInput.min = '1';
+    currentSemesterInput.max = String(totalSemesters);
+
+    const suggested = calculateSuggestedSemester();
+    const currentValue = toInt(currentSemesterInput.value, 0);
+    if (forceSuggested || currentValue < 1 || currentValue > totalSemesters) {
+        currentSemesterInput.value = String(suggested);
+    }
+}
+
+function setRole(role) {
+    roleInput.value = role;
+    roleButtons.forEach((button) => {
+        button.classList.toggle('active', button.getAttribute('data-role') === role);
+    });
+
     const isStudent = role === 'student';
     const isFaculty = role === 'faculty';
 
+    studentRow.style.display = isStudent ? 'grid' : 'none';
     prnBlock.style.display = isStudent ? 'block' : 'none';
     sectionBlock.style.display = isStudent ? 'block' : 'none';
+    currentSemesterBlock.style.display = isStudent ? 'block' : 'none';
+    academicDurationRow.style.display = isStudent ? 'grid' : 'none';
+    admissionMonthRow.style.display = isStudent ? 'block' : 'none';
+
     facultyIdBlock.style.display = isFaculty ? 'block' : 'none';
 
     prnInput.required = isStudent;
     sectionInput.required = isStudent;
+    sectionInput.disabled = !isStudent;
+    batchStartYearInput.required = isStudent;
+    batchStartYearInput.disabled = !isStudent;
+    batchEndYearInput.required = isStudent;
+    batchEndYearInput.disabled = !isStudent;
+    admissionYearInput.required = isStudent;
+    admissionYearInput.disabled = !isStudent;
+    admissionMonthInput.required = isStudent;
+    admissionMonthInput.disabled = !isStudent;
+    currentSemesterInput.required = isStudent;
+    currentSemesterInput.disabled = !isStudent;
     facultyIdInput.required = isFaculty;
+    facultyIdInput.disabled = !isFaculty;
+
+    if (isStudent) {
+        updateSemesterField(true);
+    }
 }
 
-roleSelect.addEventListener('change', syncRoleFields);
-syncRoleFields();
+roleButtons.forEach((button) => {
+    button.addEventListener('click', () => setRole(button.getAttribute('data-role')));
+});
+
+if (courseInput) {
+    courseInput.addEventListener('change', () => {
+        updateCourseHint();
+        updateSemesterField(true);
+    });
+}
+
+if (admissionYearInput) {
+    admissionYearInput.addEventListener('input', () => updateSemesterField(true));
+}
+
+if (admissionMonthInput) {
+    admissionMonthInput.addEventListener('change', () => updateSemesterField(true));
+}
+
+updateCourseHint();
+setRole('student');
 </script>
 {% endblock %}

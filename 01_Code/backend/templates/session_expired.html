@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Session Expired | ClarifAI{% endblock %}
+{% block content %}
+<section class="auth-stack-shell">
+    <div class="auth-icon-badge warning"><i data-lucide="shield-alert"></i></div>
+    <h2 class="auth-title">Session Expired</h2>
+    <p class="auth-subtitle">Your session timed out due to inactivity. Please sign in again to continue securely.</p>
+
+    <div class="auth-panel countdown-card">
+        <p><i data-lucide="timer-reset"></i> Redirecting to sign-in in <strong id="countdownValue">7</strong> seconds...</p>
+        <div class="countdown-bar"><span id="countdownProgress"></span></div>
+        <button class="btn ghost full" id="cancelRedirect" type="button">Cancel auto-redirect</button>
+    </div>
+
+    <div class="auth-action-row">
+        <a class="btn primary" href="{{ url_for('auth.login') }}">Sign In Again</a>
+        <a class="btn" href="{{ url_for('home') }}">Go to Home</a>
+    </div>
+
+    <div class="auth-panel auth-note-panel">
+        <h4>Why did this happen?</h4>
+        <p>
+            Sessions expire after inactivity to protect account data and role-based access integrity.
+            If you were editing content, please sign in and continue from your dashboard.
+        </p>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const countdownValue = document.getElementById('countdownValue');
+    const countdownProgress = document.getElementById('countdownProgress');
+    const cancelButton = document.getElementById('cancelRedirect');
+    let seconds = 7;
+    let active = true;
+
+    const tick = () => {
+        if (!active) {
+            return;
+        }
+        seconds -= 1;
+        if (countdownValue) {
+            countdownValue.textContent = String(Math.max(seconds, 0));
+        }
+        if (countdownProgress) {
+            const width = Math.max((seconds / 7) * 100, 0);
+            countdownProgress.style.width = `${width}%`;
+        }
+        if (seconds <= 0) {
+            window.location.href = "{{ url_for('auth.login') }}";
+        }
+    };
+
+    const timer = setInterval(tick, 1000);
+
+    if (cancelButton) {
+        cancelButton.addEventListener('click', () => {
+            active = false;
+            clearInterval(timer);
+            cancelButton.textContent = 'Auto-redirect cancelled';
+            cancelButton.disabled = true;
+        });
+    }
+})();
+</script>
+{% endblock %}

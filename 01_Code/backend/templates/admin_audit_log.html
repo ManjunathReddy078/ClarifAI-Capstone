@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log | ClarifAI{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block content %}
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Audit Log</div>
+
+    <div class="admin-head-row" style="margin-bottom:12px;">
+        <div>
+            <h3 style="margin:0;">Audit Log</h3>
+            <p class="chart-subtitle">Complete traceable history of moderation decisions and account governance actions.</p>
+        </div>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card"><h3>{{ kpi.total }}</h3><p>Total</p></article>
+        <article class="card admin-kpi-card kpi-teal"><h3>{{ kpi.approved }}</h3><p>Approved</p></article>
+        <article class="card admin-kpi-card kpi-red"><h3>{{ kpi.rejected }}</h3><p>Rejected</p></article>
+        <article class="card admin-kpi-card kpi-amber"><h3>{{ kpi.edit_requested }}</h3><p>Edit Requests</p></article>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row audit">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by subject, admin, or action...">
+            <select name="action">
+                <option value="all" {{ 'selected' if action == 'all' else '' }}>All Action Types</option>
+                <option value="approve" {{ 'selected' if action == 'approve' else '' }}>Approved</option>
+                <option value="reject" {{ 'selected' if action == 'reject' else '' }}>Rejected</option>
+                <option value="request_edit" {{ 'selected' if action == 'request_edit' else '' }}>Edit Requested</option>
+            </select>
+            <select name="admin_id">
+                <option value="all">All Admins</option>
+                {% for admin in admin_options %}
+                    <option value="{{ admin.id }}" {{ 'selected' if admin_id == admin.id|string else '' }}>{{ admin.full_name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="view" value="{{ view }}">
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('admin.audit_log') }}">Reset</a>
+            <div class="insights-tabs admin-view-toggle">
+                <a class="{{ 'active' if view == 'timeline' else '' }}" href="{{ url_for('admin.audit_log', q=search, action=action, admin_id=admin_id, view='timeline') }}">Timeline</a>
+                <a class="{{ 'active' if view == 'table' else '' }}" href="{{ url_for('admin.audit_log', q=search, action=action, admin_id=admin_id, view='table') }}">Table</a>
+            </div>
+        </form>
+    </article>
+
+    {% if view == 'timeline' %}
+        <div class="admin-audit-timeline">
+            {% for log in logs %}
+                <article class="card admin-audit-timeline-item">
+                    <div class="admin-timeline-marker"></div>
+                    <div>
+                        <span class="audit-chip {{ log.action }}">{{ log.action.replace('_', ' ')|title }}</span>
+                        <h4>Feedback on {{ log.feedback.subject }} by {{ log.feedback.student.full_name }}</h4>
+                        <small>Performed by {{ log.admin.full_name }} · {{ log.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                        {% if log.note %}<p>"{{ log.note }}"</p>{% endif %}
+                        <div class="chart-subtitle">Feedback ID: #{{ log.feedback_id }}</div>
+                    </div>
+                </article>
+            {% else %}
+                <article class="card"><p style="margin:0;">No audit entries found for current filters.</p></article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <article class="card table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Feedback</th>
+                        <th>Admin</th>
+                        <th>Date</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td><span class="audit-chip {{ log.action }}">{{ log.action.replace('_', ' ')|title }}</span></td>
+                            <td>{{ log.feedback.subject }}<small class="chart-subtitle" style="display:block;">#{{ log.feedback_id }}</small></td>
+                            <td>{{ log.admin.full_name }}</td>
+                            <td>{{ log.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</td>
+                            <td>{{ log.note or '-' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5">No audit entries found for current filters.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </article>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Faculty Updates | ClarifAI{% endblock %}
+{% block page_title %}Faculty Updates{% endblock %}
+{% block content %}
+<section class="student-flow-shell">
+    <div class="flow-breadcrumb">Faculty <span>/</span> Updates</div>
+
+    <div class="space-between" style="margin-bottom:12px; align-items:flex-end;">
+        <div>
+            <h2 style="margin:0;">Updates Center</h2>
+            <p class="chart-subtitle">Track feedback approvals, checklist activity, and intervention publishing updates.</p>
+        </div>
+        <a class="btn" href="{{ url_for('faculty.dashboard') }}"><i data-lucide="layout-dashboard"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:12px;">
+        <article class="card faculty-kpi-card">
+            <div class="modern-stat-head"><small>Approved Feedback</small><i data-lucide="message-square"></i></div>
+            <h3>{{ approved_feedback_count }}</h3>
+            <p>Available for insights</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-violet">
+            <div class="modern-stat-head"><small>Active Checklist Groups</small><i data-lucide="clipboard-list"></i></div>
+            <h3>{{ active_checklist_count }}</h3>
+            <p>Pending grouped checklist completion</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-green">
+            <div class="modern-stat-head"><small>Published Interventions</small><i data-lucide="book-open"></i></div>
+            <h3>{{ published_intervention_count }}</h3>
+            <p>Visible to students</p>
+        </article>
+        <article class="card faculty-kpi-card kpi-teal">
+            <div class="modern-stat-head"><small>Draft Interventions</small><i data-lucide="file-pen-line"></i></div>
+            <h3>{{ draft_intervention_count }}</h3>
+            <p>Author-only drafts</p>
+        </article>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;">
+        <div class="space-between" style="margin-bottom:8px;">
+            <h3 style="margin:0;">Engagement Snapshot</h3>
+            <span class="chart-subtitle">Intervention interactions</span>
+        </div>
+        <div class="board-engagement" style="font-size:0.9rem;">
+            <span><i data-lucide="eye"></i> Opened {{ engaged_open_count }}</span>
+            <span><i data-lucide="bookmark"></i> Saved {{ engaged_save_count }}</span>
+        </div>
+    </div>
+
+    <article class="card table-wrap">
+        <div class="space-between" style="margin-bottom:10px;">
+            <h3 style="margin:0;">Recent Activity Feed</h3>
+            <div class="flex">
+                <a class="btn {{ 'primary' if selected_type == 'all' else '' }}" href="{{ url_for('faculty.updates_page', type='all') }}">All</a>
+                <a class="btn {{ 'primary' if selected_type == 'feedback' else '' }}" href="{{ url_for('faculty.updates_page', type='feedback') }}">Feedback</a>
+                <a class="btn {{ 'primary' if selected_type == 'checklist' else '' }}" href="{{ url_for('faculty.updates_page', type='checklist') }}">Checklist</a>
+                <a class="btn {{ 'primary' if selected_type == 'intervention' else '' }}" href="{{ url_for('faculty.updates_page', type='intervention') }}">Intervention</a>
+            </div>
+        </div>
+
+        {% if events %}
+        <table class="table faculty-feedback-table">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events[:60] %}
+                <tr>
+                    <td>{{ event.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</td>
+                    <td><span class="tag-pill">{{ event.kind|title }}</span></td>
+                    <td>{{ event.title }}</td>
+                    <td>{{ event.detail }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="margin:0; color:var(--muted);">No updates found for this filter yet.</p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}

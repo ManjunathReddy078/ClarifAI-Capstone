@@ -3,15 +3,102 @@
 {% block page_title %}Edit Checklist{% endblock %}
 {% block content %}
 <div class="card">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <label class="label">Title</label>
         <input type="text" name="title" value="{{ checklist.title }}" required>
 
         <label class="label">Description</label>
-        <textarea name="description">{{ checklist.description or '' }}</textarea>
+        <textarea name="description">{{ checklist_details.description }}</textarea>
 
-        <label class="label">Student Email</label>
-        <input type="email" name="student_email" value="{{ checklist.student.email }}" required>
+        <label class="label">Checklist Items * (minimum 2, maximum 10)</label>
+        <div id="editChecklistItems" class="checklist-input-stack" data-max-items="10" data-min-items="2">
+            {% for task in checklist_details.checklist_items %}
+            <div class="checklist-input-row">
+                <span class="checklist-input-label">Checklist-{{ loop.index }}</span>
+                <input type="text" name="checklist_item_{{ loop.index }}" value="{{ task }}" {% if loop.index <= 2 %}required{% endif %}>
+                <button type="button" class="btn checklist-remove-item">Remove</button>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" class="btn" id="editAddChecklistItemBtn" style="margin-top:8px;">+ Add Checklist Item</button>
+
+        <div class="grid-3">
+            <div>
+                <label class="label">Category</label>
+                <select name="category" required>
+                    {% for option in category_options %}
+                        <option value="{{ option }}" {{ 'selected' if checklist_details.category == option else '' }}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="label">Applicable Course</label>
+                <select id="editTargetCourse" disabled>
+                    <option value="BOTH" {{ 'selected' if checklist_details.target_course == 'BOTH' else '' }}>Both MCA and BCA</option>
+                    <option value="MCA" {{ 'selected' if checklist_details.target_course == 'MCA' else '' }}>Only MCA</option>
+                    <option value="BCA" {{ 'selected' if checklist_details.target_course == 'BCA' else '' }}>Only BCA</option>
+                </select>
+            </div>
+            <div>
+                <label class="label">Subject</label>
+                <select name="subject" id="editSubjectSelect">
+                    <option value="No specific subject" {{ 'selected' if checklist_details.subject == 'No specific subject' else '' }}>No specific subject</option>
+                    {% for option in subject_options %}
+                        <option value="{{ option }}" {{ 'selected' if checklist_details.subject == option else '' }}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div>
+                <label class="label">Priority</label>
+                <select name="priority">
+                    <option value="high" {{ 'selected' if checklist_details.priority == 'high' else '' }}>High</option>
+                    <option value="medium" {{ 'selected' if checklist_details.priority == 'medium' else '' }}>Medium</option>
+                    <option value="low" {{ 'selected' if checklist_details.priority == 'low' else '' }}>Low</option>
+                </select>
+            </div>
+            <div>
+                <label class="label">Due Date</label>
+                <input type="date" name="due_date" value="{{ checklist_details.due_date }}" required>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div>
+                <label class="label">Semester</label>
+                <input type="text" value="{{ checklist_details.target_semester|upper }}" disabled>
+            </div>
+            <div>
+                <label class="label">Section</label>
+                <input type="text" value="{{ checklist_details.target_section|upper }}" disabled>
+            </div>
+        </div>
+
+        {% if checklist_details.attachment %}
+            <label class="label">Current Attachment</label>
+            <div class="card" style="padding:12px; margin-bottom:8px;">
+                {% if checklist_details.attachment.kind == 'file' and checklist_details.attachment.path %}
+                    <a class="btn subtle-link" href="{{ url_for('static', filename=checklist_details.attachment.path) }}" target="_blank" rel="noopener">{{ checklist_details.attachment.name or 'Open Attached File' }}</a>
+                {% elif checklist_details.attachment.url %}
+                    <a class="btn subtle-link" href="{{ checklist_details.attachment.url }}" target="_blank" rel="noopener">Open Current Link</a>
+                {% else %}
+                    <span class="chart-subtitle">Attachment metadata available.</span>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <label class="label">Replace Attachment File (Max 20MB)</label>
+        <input type="file" name="attachment_file" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,.csv,.zip,.rar,.png,.jpg,.jpeg">
+
+        <label class="label">Attachment Link (Drive/external)</label>
+        <input type="url" name="attachment_link" placeholder="https://drive.google.com/...">
+
+        <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+            <input type="checkbox" name="remove_attachment" value="1">
+            <span>Remove existing attachment</span>
+        </label>
 
         <div class="flex" style="margin-top:14px;">
             <button class="btn primary" type="submit">Save Changes</button>
@@ -19,4 +106,98 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const subjectCatalog = {{ subject_catalog_by_course | tojson }};
+    const course = '{{ checklist_details.target_course }}';
+    const subjectSelect = document.getElementById('editSubjectSelect');
+    const noSpecific = 'No specific subject';
+
+    if (subjectSelect) {
+        const options = ['No specific subject'];
+        if (course === 'MCA' || course === 'BCA') {
+            options.push(...(subjectCatalog[course] || []));
+        }
+
+        const current = subjectSelect.value || noSpecific;
+        subjectSelect.innerHTML = '';
+        options.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            subjectSelect.appendChild(option);
+        });
+
+        if (![...subjectSelect.options].some((option) => option.value === current) && current !== noSpecific) {
+            const legacyOption = document.createElement('option');
+            legacyOption.value = current;
+            legacyOption.textContent = current;
+            subjectSelect.appendChild(legacyOption);
+        }
+        subjectSelect.value = [...subjectSelect.options].some((option) => option.value === current)
+            ? current
+            : noSpecific;
+    }
+
+    const checklistWrap = document.getElementById('editChecklistItems');
+    const addBtn = document.getElementById('editAddChecklistItemBtn');
+    if (!checklistWrap || !addBtn) {
+        return;
+    }
+
+    const maxItems = Number(checklistWrap.dataset.maxItems || 10);
+    const minItems = Number(checklistWrap.dataset.minItems || 2);
+
+    const refreshRows = () => {
+        const rows = [...checklistWrap.querySelectorAll('.checklist-input-row')];
+        rows.forEach((row, index) => {
+            const serial = index + 1;
+            const label = row.querySelector('.checklist-input-label');
+            const input = row.querySelector('input');
+            const removeBtn = row.querySelector('.checklist-remove-item');
+            if (label) {
+                label.textContent = `Checklist-${serial}`;
+            }
+            if (input) {
+                input.name = `checklist_item_${serial}`;
+                input.required = serial <= minItems;
+            }
+            if (removeBtn) {
+                removeBtn.style.display = rows.length > minItems ? 'inline-flex' : 'none';
+            }
+        });
+        addBtn.disabled = rows.length >= maxItems;
+    };
+
+    checklistWrap.addEventListener('click', (event) => {
+        const removeBtn = event.target.closest('.checklist-remove-item');
+        if (!removeBtn) {
+            return;
+        }
+        const rows = checklistWrap.querySelectorAll('.checklist-input-row');
+        if (rows.length <= minItems) {
+            return;
+        }
+        removeBtn.closest('.checklist-input-row')?.remove();
+        refreshRows();
+    });
+
+    addBtn.addEventListener('click', () => {
+        const rows = checklistWrap.querySelectorAll('.checklist-input-row');
+        if (rows.length >= maxItems) {
+            return;
+        }
+        const row = document.createElement('div');
+        row.className = 'checklist-input-row';
+        row.innerHTML = '<span class="checklist-input-label"></span><input type="text" placeholder="Enter checklist item"><button type="button" class="btn checklist-remove-item">Remove</button>';
+        checklistWrap.appendChild(row);
+        refreshRows();
+    });
+
+    refreshRows();
+})();
+</script>
 {% endblock %}

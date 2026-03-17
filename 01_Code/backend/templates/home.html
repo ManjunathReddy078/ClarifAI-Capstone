@@ -1,125 +1,206 @@
 {% extends 'base.html' %}
-{% block title %}ClarifAI | MCA Feedback Intelligence{% endblock %}
+{% block title %}ClarifAI | Computer Applications Feedback Intelligence{% endblock %}
 {% block content %}
-<div class="landing-shell">
+<div class="landing-shell" id="top">
     <header class="landing-header">
-        <a class="landing-logo-wrap" href="{{ url_for('home') }}">
+        <a class="landing-logo-wrap" href="#top" aria-label="Scroll to top">
             <img src="{{ url_for('static', filename='logos/ClarifAI-.png') }}" alt="ClarifAI" class="landing-logo full-logo">
             <span>ClarifAI</span>
+            <span class="course-chip"><i data-lucide="bot"></i><span>CA</span></span>
         </a>
         <nav class="landing-nav">
             <a href="#features">Features</a>
-            <a href="#about">About</a>
+            <a href="#workflow">How It Works</a>
+            <a href="#faq">FAQ</a>
             <a href="#contact">Contact</a>
             {% if session.get('user_id') and dashboard_url %}
+                <span class="course-chip"><i data-lucide="user-round"></i><span>{{ user_role|title }}</span></span>
                 <a class="btn" href="{{ dashboard_url }}">Dashboard</a>
-                <span class="profile-chip">{{ user_role[0]|upper }}</span>
+                <a class="btn ghost" href="{{ url_for('auth.logout') }}">Logout</a>
             {% else %}
-                <a href="{{ url_for('auth.login') }}">Login</a>
-                <a class="btn primary" href="{{ url_for('auth.register') }}">Sign Up</a>
+                <a class="btn ghost" href="{{ url_for('auth.register') }}">Sign Up</a>
+                <a class="btn" href="{{ url_for('auth.login') }}">Sign In</a>
             {% endif %}
         </nav>
     </header>
 
     <section class="landing-hero" id="home">
         <div>
-            <h1>Empower Your Voice, Elevate Education.</h1>
+            <div class="hero-kicker">ClarifAI</div>
+            <h1>Academic Feedback, <br>Intelligently Governed</h1>
             <p>
-                ClarifAI Connect is a platform where students share insights and faculty foster growth.
-                Transform feedback into measurable progress for the MCA department.
+                ClarifAI is a role-based feedback intelligence platform for Computer Applications departments.
+                Powered by explainable NLP sentiment routing, it ensures feedback is constructive,
+                traceable, and actionable.
             </p>
-            {% if session.get('user_id') and dashboard_url %}
-                <a class="btn primary" href="{{ dashboard_url }}">Get Started</a>
-            {% else %}
-                <a class="btn primary" href="{{ url_for('auth.register') }}">Get Started</a>
-            {% endif %}
+            <div class="hero-role-actions">
+                <a class="btn primary" href="{{ dashboard_url if session.get('user_id') and dashboard_url else url_for('auth.login') }}">Let's Go →</a>
+            </div>
+            <div class="hero-metric-grid">
+                <article class="metric-card"><strong>96%</strong><span>Classification Accuracy</span></article>
+                <article class="metric-card"><strong>3x</strong><span>Faster Moderation</span></article>
+                <article class="metric-card"><strong>500+</strong><span>Feedback Processed</span></article>
+                <article class="metric-card"><strong>12</strong><span>Capstone Stories</span></article>
+            </div>
         </div>
-        <div class="hero-visual card floating-soft">
+        <div class="hero-visual card floating-soft glow-panel">
             <img src="{{ url_for('static', filename='logos/ClarifAI_transparent-.png') }}" alt="ClarifAI Logo">
         </div>
     </section>
 
     <section id="features" class="landing-section">
-        <h2>Unlock the Power of Connection</h2>
-        <div class="landing-features">
+        <div class="section-chip">Platform Capabilities</div>
+        <h2>Built for Academic Excellence</h2>
+        <p class="section-subtitle">Every feature is designed with Computer Applications academic workflows in mind.</p>
+        <div class="landing-features features-6">
             <article class="feature-card float-loop">
-                <h4>Student Reviews</h4>
-                <p>Share your faculty experiences anonymously to foster academic improvement.</p>
+                <h4>Structured Feedback</h4>
+                <p>Multi-dimensional feedback forms covering teaching quality, pace, and engagement.</p>
             </article>
             <article class="feature-card float-loop delay-1">
-                <h4>Knowledge Sharing</h4>
-                <p>Exchange valuable insights, resources, and experiences with peers and faculty.</p>
+                <h4>NLP Sentiment Routing</h4>
+                <p>Explainable AI classification marks feedback as positive, neutral, or moderation-needed.</p>
             </article>
             <article class="feature-card float-loop delay-2">
-                <h4>Faculty Checklists</h4>
-                <p>Access curated checklist guidance to organize your academic and project work.</p>
+                <h4>Admin Moderation</h4>
+                <p>Structured moderation queue with rationale tracking and audit visibility.</p>
             </article>
             <article class="feature-card float-loop delay-3">
-                <h4>Dashboard Analytics</h4>
-                <p>Gain actionable trends and performance summaries with intuitive dashboards.</p>
+                <h4>Faculty Insights</h4>
+                <p>Visual dashboards with trend analysis and action-oriented insights.</p>
+            </article>
+            <article class="feature-card float-loop">
+                <h4>Knowledge Sharing</h4>
+                <p>Capture solution notes, outcomes, and reusable experience snippets.</p>
+            </article>
+            <article class="feature-card float-loop delay-1">
+                <h4>Action Checklists</h4>
+                <p>Faculty-assigned checklists with completion tracking and progress updates.</p>
             </article>
         </div>
     </section>
 
-    <section id="about" class="landing-section mission-grid">
-        <h2>Our Mission & Vision</h2>
-        <div class="grid-2">
-            <div class="card">
-                <h3>Revolutionizing Academic Feedback</h3>
-                <p>
-                    Our mission is to create a transparent and constructive feedback ecosystem where students
-                    can voice experiences securely and faculty gain actionable insights for continuous improvement.
-                </p>
+    <section id="workflow" class="landing-section">
+        <div class="section-chip">Workflow</div>
+        <h2>How ClarifAI Works</h2>
+        <p class="section-subtitle">A transparent, governed feedback lifecycle from submission to faculty action.</p>
+        <div class="workflow-grid">
+            <div class="workflow-step float-loop">
+                <span>01</span>
+                <h4>Submit Structured Feedback</h4>
+                <p>Students submit tagged review inputs with context and timing.</p>
             </div>
-            <div class="card">
-                <h3>Envisioning a Connected Campus</h3>
-                <p>
-                    Our vision is a connected learning space where knowledge sharing, mentorship, and
-                    data-informed decisions elevate academic standards consistently.
-                </p>
+            <div class="workflow-step float-loop delay-1">
+                <span>02</span>
+                <h4>Automatic Sentiment Routing</h4>
+                <p>Positive feedback is auto-approved while sensitive entries go to moderation.</p>
+            </div>
+            <div class="workflow-step float-loop delay-2">
+                <span>03</span>
+                <h4>Moderation & Governance</h4>
+                <p>Admin reviews and actions are logged with complete rationale.</p>
+            </div>
+            <div class="workflow-step float-loop delay-3">
+                <span>04</span>
+                <h4>Review Insights & Act</h4>
+                <p>Faculty receives clear trends and converts them into checklist actions.</p>
             </div>
         </div>
     </section>
 
-    <section id="contact" class="landing-section grid-2">
-        <div class="card">
-            <h2 style="margin-top:0;">Get in Touch</h2>
-            <p>Need assistance or want to collaborate on improvements?</p>
-            <p><strong>Email:</strong> support@clarifai.edu</p>
-            <p><strong>Phone:</strong> +91 00000 00000</p>
-            <p><strong>Address:</strong> MCA Department Campus</p>
-            <a class="btn" href="mailto:support@clarifai.edu">Contact Administrator</a>
+    <section class="landing-section">
+        <h2>Three Roles, One Platform</h2>
+        <p class="section-subtitle">Select your role to explore the ClarifAI workflow designed for you.</p>
+        <div class="role-cards-grid">
+            <article class="role-card student float-loop">
+                <h3>Student Portal</h3>
+                <ul>
+                    <li>Track moderation status</li>
+                    <li>Share knowledge entries</li>
+                    <li>Submit structured feedback</li>
+                </ul>
+                {% if not session.get('user_id') %}
+                    <a class="btn primary role-card-btn" href="{{ url_for('auth.login', role='student') }}">Pick up where you left off</a>
+                {% endif %}
+            </article>
+            <article class="role-card faculty float-loop delay-1">
+                <h3>Faculty Portal</h3>
+                <ul>
+                    <li>View approved insights</li>
+                    <li>Analyze sentiment trends</li>
+                    <li>Manage student checklists</li>
+                </ul>
+                {% if not session.get('user_id') %}
+                    <a class="btn primary role-card-btn" href="{{ url_for('auth.login', role='faculty') }}">Welcome back</a>
+                {% endif %}
+            </article>
+            <article class="role-card admin float-loop delay-2">
+                <h3>Admin Portal</h3>
+                <ul>
+                    <li>Track full audit trail</li>
+                    <li>Manage user access</li>
+                    <li>Moderate feedback queue</li>
+                </ul>
+                {% if not session.get('user_id') %}
+                    <a class="btn primary role-card-btn" href="{{ url_for('auth.login', role='admin') }}">Get access</a>
+                {% endif %}
+            </article>
         </div>
-        <div class="card">
-            <h3 style="margin-top:0;">Website Feedback / Improvement Suggestion</h3>
+    </section>
+
+    <section id="faq" class="landing-section faq-wrap">
+        <h2>Frequently Asked Questions</h2>
+        <p class="section-subtitle">Everything you need to know about ClarifAI.</p>
+        <details class="faq-item"><summary>Who can access ClarifAI?</summary><p>Only whitelisted students and faculty can register; admin is provisioned internally.</p></details>
+        <details class="faq-item"><summary>How does NLP sentiment classification work?</summary><p>Each review is processed via explainable sentiment scoring and routed to approval or moderation.</p></details>
+        <details class="faq-item"><summary>Is my feedback anonymous?</summary><p>Feedback is protected from peer visibility and governed by role-based access controls.</p></details>
+        <details class="faq-item"><summary>Can I edit submitted feedback?</summary><p>Yes, students can update entries while they are in editable states or after request-for-edit.</p></details>
+        <details class="faq-item"><summary>What is the Knowledge Board?</summary><p>A curated board where students and faculty share useful resources and practical experiences.</p></details>
+        <details class="faq-item"><summary>How are faculty insights protected?</summary><p>Only approved feedback is visible to faculty dashboards, preserving moderation integrity.</p></details>
+    </section>
+
+    <section id="contact" class="landing-section contact-section">
+        <h2>Contact & Suggestions</h2>
+        <p class="section-subtitle">Have feedback about the platform? Send us a suggestion.</p>
+        <div class="card contact-form-card contact-form-centered">
             <form method="post" action="{{ url_for('home') }}">
-                <label class="label">Your Name</label>
-                <input type="text" name="visitor_name" required>
+                <div class="grid-2">
+                    <div>
+                        <label class="label">Full Name</label>
+                        <input type="text" name="visitor_name" placeholder="Your name" required>
+                    </div>
+                    <div>
+                        <label class="label">Email Address</label>
+                        <input type="email" name="visitor_email" placeholder="your@email.com" required>
+                    </div>
+                </div>
 
-                <label class="label">Your Email</label>
-                <input type="email" name="visitor_email" required>
-
-                <label class="label">Suggestion</label>
-                <textarea name="message" required></textarea>
+                <label class="label">Your Suggestion</label>
+                <textarea name="message" placeholder="Share your thoughts, feedback, or feature suggestions..." required></textarea>
 
                 <div style="margin-top:12px;">
-                    <button class="btn primary" type="submit">Submit Suggestion</button>
+                    <button class="btn primary full" type="submit">Send Message</button>
                 </div>
             </form>
         </div>
     </section>
 
     <footer class="landing-footer">
-        <div>
-            <strong>ClarifAI Connect</strong>
-            <p>Connecting academia for better insights.</p>
-        </div>
-        <div>
+        <div class="footer-links">
             <a href="#features">Features</a>
-            <a href="#about">About</a>
+            <a href="#workflow">How It Works</a>
+            <a href="#faq">FAQ</a>
             <a href="#contact">Contact</a>
         </div>
-        <div>© 2026 ClarifAI Connect. All rights reserved.</div>
+        <div class="footer-copy">
+            <span class="footer-copy-main">© 2025-2026 ClarifAI. All rights reserved. Seelam Manjunath Reddy</span>
+        </div>
+        <div class="footer-brand-block">
+            <a class="footer-brand" href="#top" aria-label="Scroll to top">
+                <img src="{{ url_for('static', filename='logos/ClarifAI-.png') }}" alt="ClarifAI" class="landing-logo full-logo footer-logo">
+            </a>
+            <span class="course-chip footer-chip"><i data-lucide="bot"></i><span>CA</span></span>
+        </div>
     </footer>
 </div>
 {% endblock %}

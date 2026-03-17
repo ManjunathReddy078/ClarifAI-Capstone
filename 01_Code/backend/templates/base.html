@@ -14,43 +14,65 @@
 {% set is_home = request.endpoint == 'home' %}
 {% set is_auth = request.endpoint in ['auth.login', 'auth.register', 'auth.reset_request', 'auth.reset_verify', 'auth.reset_password'] %}
 {% if is_home %}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="home-flash-wrap">
-            {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    {% endwith %}
-    {{ content_block }}
+    <div class="public-page-shell">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="home-flash-wrap">
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+        {{ content_block }}
+    </div>
 {% elif is_auth %}
-    <main class="auth-shell">
-        <div class="auth-card auth-wide card">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-wrap">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            {% endwith %}
-            {{ content_block }}
-        </div>
-    </main>
+    <div class="public-page-shell auth-public-shell">
+        <main class="auth-shell">
+            <div class="auth-card auth-wide card">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="flash-wrap">
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+                {{ content_block }}
+            </div>
+        </main>
+        <footer class="public-bottom-strip">© 2025-2026 ClarifAI. All rights reserved. Seelam Manjunath Reddy</footer>
+    </div>
 {% else %}
+    {% set role = session.get('role') %}
+    {% if role == 'student' %}
+        {% set notification_href = url_for('student.dashboard') ~ '#recent-updates' %}
+        {% set profile_href = url_for('student.profile_settings', tab='profile') %}
+    {% elif role == 'faculty' %}
+        {% set notification_href = url_for('faculty.updates_page') %}
+        {% set profile_href = url_for('faculty.profile_settings', tab='profile') %}
+    {% elif role == 'admin' %}
+        {% set notification_href = url_for('admin.updates_page') %}
+        {% set profile_href = url_for('admin.profile_settings', tab='profile') %}
+    {% else %}
+        {% set notification_href = url_for('auth.login') %}
+        {% set profile_href = url_for('auth.login') %}
+    {% endif %}
+
     <div class="dashboard-shell">
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <aside class="app-sidebar" id="appSidebar">
             <div class="app-brand-row">
-                <div class="app-brand">
-                    <div class="app-brand-icon"><i data-lucide="brain"></i></div>
+                <a class="app-brand" href="{{ url_for('home') }}" aria-label="Go to home">
+                    <div class="app-brand-icon">
+                        <img src="{{ url_for('static', filename='logos/ClarifAI-.png') }}" alt="ClarifAI Logo">
+                    </div>
                     <div>
                         <div class="app-brand-title">ClarifAI</div>
                         <div class="app-brand-sub">Academic Feedback Intelligence</div>
                     </div>
-                </div>
+                </a>
                 <button class="icon-btn only-mobile" id="sidebarClose"><i data-lucide="x"></i></button>
             </div>
 
@@ -58,7 +80,10 @@
                 <div class="app-user-avatar">{{ (session.get('full_name') or 'U')[:1]|upper }}</div>
                 <div>
                     <div class="app-user-name">{{ session.get('full_name') or 'User' }}</div>
-                    <div class="app-user-role">{{ session.get('role', 'user')|title }}</div>
+                    <div class="app-user-role">{{ session.get('email') or (session.get('role', 'user')|title) }}</div>
+                    {% if session.get('user_code') %}
+                        <div class="app-user-role-code">{{ session.get('user_code') }}</div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -67,18 +92,28 @@
                 <div class="nav-links">
                     {% if session.get('role') == 'student' %}
                         <a class="{{ 'active' if request.endpoint == 'student.dashboard' else '' }}" href="{{ url_for('student.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
-                        <a class="{{ 'active' if request.endpoint in ['student.reviews', 'student.edit_review'] else '' }}" href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Reviews</a>
-                        <a class="{{ 'active' if request.endpoint in ['student.my_checklists'] else '' }}" href="{{ url_for('student.my_checklists') }}"><i data-lucide="check-square"></i> My Checklists</a>
-                        <a class="{{ 'active' if request.endpoint in ['student.knowledge_board', 'student.my_knowledge_posts', 'student.knowledge_post', 'student.edit_knowledge_post'] else '' }}" href="{{ url_for('student.knowledge_board') }}"><i data-lucide="book-open"></i> Experience & Resources</a>
+                        <a class="{{ 'active' if request.endpoint == 'student.submit_feedback_page' else '' }}" href="{{ url_for('student.submit_feedback_page') }}"><i data-lucide="plus-square"></i> Submit Feedback</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.reviews', 'student.edit_review'] else '' }}" href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Feedback</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.knowledge_board', 'student.my_knowledge_posts', 'student.knowledge_post', 'student.edit_knowledge_post'] else '' }}" href="{{ url_for('student.knowledge_board') }}"><i data-lucide="book-open"></i> Knowledge Board</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.experience_feed', 'student.my_experiences', 'student.create_experience', 'student.edit_experience', 'student.delete_experience'] else '' }}" href="{{ url_for('student.experience_feed') }}"><i data-lucide="sparkles"></i> Experiences</a>
+                        <a class="{{ 'active' if request.endpoint in ['student.my_checklists'] else '' }}" href="{{ url_for('student.my_checklists') }}"><i data-lucide="check-square"></i> My Checklist</a>
                     {% elif session.get('role') == 'faculty' %}
                         <a class="{{ 'active' if request.endpoint == 'faculty.dashboard' else '' }}" href="{{ url_for('faculty.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
                         <a class="{{ 'active' if request.endpoint == 'faculty.reviews' else '' }}" href="{{ url_for('faculty.reviews') }}"><i data-lucide="bar-chart-3"></i> Feedback Insights</a>
                         <a class="{{ 'active' if request.endpoint in ['faculty.checklists_page', 'faculty.edit_checklist'] else '' }}" href="{{ url_for('faculty.checklists_page') }}"><i data-lucide="clipboard-list"></i> Checklist Manager</a>
-                        <a class="{{ 'active' if request.endpoint in ['faculty.resource_board', 'faculty.my_resources', 'faculty.resource_post', 'faculty.edit_resource_post'] else '' }}" href="{{ url_for('faculty.resource_board') }}"><i data-lucide="book-open"></i> Resources</a>
+                        <a class="{{ 'active' if request.endpoint in ['faculty.resource_board', 'faculty.my_resources', 'faculty.resource_post', 'faculty.edit_resource_post'] else '' }}" href="{{ url_for('faculty.resource_board') }}"><i data-lucide="activity"></i> Knowledge Interventions</a>
+                        <a class="{{ 'active' if request.endpoint == 'faculty.experiences' else '' }}" href="{{ url_for('faculty.experiences') }}"><i data-lucide="sparkles"></i> Student Experiences</a>
                     {% elif session.get('role') == 'admin' %}
                         <a class="{{ 'active' if request.endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.moderation_page' else '' }}" href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation Queue</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.faculty_feedback_holding_page' else '' }}" href="{{ url_for('admin.faculty_feedback_holding_page') }}"><i data-lucide="inbox"></i> Faculty Delivery Queue {% if pending_faculty_feedback_count %}<span class="inline-badge">{{ pending_faculty_feedback_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.academic_mapping_page' else '' }}" href="{{ url_for('admin.academic_mapping_page') }}"><i data-lucide="network"></i> Academic Mapping</a>
+                        <a class="{{ 'active' if request.endpoint in ['admin.semester_exceptions_page'] else '' }}" href="{{ url_for('admin.semester_exceptions_page') }}"><i data-lucide="graduation-cap"></i> Semester Exceptions {% if pending_semester_exceptions_count %}<span class="inline-badge">{{ pending_semester_exceptions_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint in ['admin.suggestions_page'] else '' }}" href="{{ url_for('admin.suggestions_page') }}"><i data-lucide="messages-square"></i> Suggestions {% if unread_suggestions_count %}<span class="inline-badge">{{ unread_suggestions_count }}</span>{% endif %}</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.users' else '' }}" href="{{ url_for('admin.users') }}"><i data-lucide="users"></i> User Management</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.audit_log' else '' }}" href="{{ url_for('admin.audit_log') }}"><i data-lucide="file-clock"></i> Audit Log</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.experience_moderation' else '' }}" href="{{ url_for('admin.experience_moderation') }}"><i data-lucide="newspaper"></i> Experience Moderation {% if pending_experience_moderation_count %}<span class="inline-badge">{{ pending_experience_moderation_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.experience_reports_list' else '' }}" href="{{ url_for('admin.experience_reports_list') }}"><i data-lucide="flag"></i> Experience Reports {% if open_experience_reports_count %}<span class="inline-badge">{{ open_experience_reports_count }}</span>{% endif %}</a>
                     {% endif %}
                 </div>
             </div>
@@ -86,6 +121,16 @@
             <div class="app-nav-block app-nav-footer">
                 <div class="app-nav-label">Account</div>
                 <div class="nav-links">
+                    {% if session.get('role') == 'student' %}
+                        <a class="{{ 'active' if request.endpoint == 'student.dashboard' else '' }}" href="{{ url_for('student.dashboard') }}#recent-updates"><i data-lucide="bell"></i> Updates {% if role_notification_badge_count %}<span class="inline-badge">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'student.profile_settings' else '' }}" href="{{ url_for('student.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile</a>
+                    {% elif session.get('role') == 'faculty' %}
+                        <a class="{{ 'active' if request.endpoint == 'faculty.updates_page' else '' }}" href="{{ url_for('faculty.updates_page') }}"><i data-lucide="bell"></i> Updates {% if role_notification_badge_count %}<span class="inline-badge">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'faculty.profile_settings' else '' }}" href="{{ url_for('faculty.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile</a>
+                    {% else %}
+                        <a class="{{ 'active' if request.endpoint == 'admin.updates_page' else '' }}" href="{{ url_for('admin.updates_page') }}"><i data-lucide="bell"></i> Updates {% if role_notification_badge_count %}<span class="inline-badge">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.profile_settings' else '' }}" href="{{ url_for('admin.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile</a>
+                    {% endif %}
                     <a href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Logout</a>
                 </div>
             </div>
@@ -94,12 +139,15 @@
         <div class="app-main-wrap">
             <header class="app-topbar">
                 <button class="icon-btn" id="sidebarToggle"><i data-lucide="menu"></i></button>
-                <div>
+                <div class="app-topbar-title-wrap">
                     <h2 style="margin:0;">{% block page_title %}Dashboard{% endblock %}</h2>
-                    <small style="color: var(--muted);">MCA Department Feedback & Knowledge System</small>
                 </div>
                 <div class="app-topbar-actions">
-                    <button class="btn" id="themeToggle"><i data-lucide="moon"></i> Theme</button>
+                    <a class="icon-btn bell-btn" href="{{ notification_href }}" aria-label="Open updates"><i data-lucide="bell"></i>{% if role_notification_badge_count %}<span class="inline-badge floating">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                    <a class="btn profile-chip-btn" href="{{ profile_href }}">
+                        <span class="mini-avatar">{{ (session.get('full_name') or 'A')[:1]|upper }}</span>
+                        <span class="mini-name">{{ (session.get('full_name') or 'User').split(' ')[0] }}</span>
+                    </a>
                 </div>
             </header>
 

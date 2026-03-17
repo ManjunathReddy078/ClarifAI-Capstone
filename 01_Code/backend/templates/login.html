@@ -1,49 +1,51 @@
 {% extends 'base.html' %}
 {% block title %}Login | ClarifAI{% endblock %}
 {% block content %}
-<section class="auth-split">
-    <div class="auth-pane">
-        <h2 style="margin-top:0;">Welcome Back</h2>
-        <p style="color: var(--muted);">Sign in to your ClarifAI account to continue.</p>
-        <form method="post">
-            <label class="label">Email</label>
-            <input type="email" name="email" required>
+{% set role_copy = {
+    'student': {'title': 'Student login', 'subtitle': 'Continue your student feedback journey.'},
+    'faculty': {'title': 'Faculty login', 'subtitle': 'Welcome back to your faculty insight workspace.'},
+    'admin': {'title': 'Admin login', 'subtitle': 'Access the governed moderation and management console.'}
+} %}
+{% set active_role = selected_role if selected_role in role_copy else None %}
+<section class="auth-stack-shell">
+    <a class="auth-home-link" href="{{ url_for('home') }}" aria-label="Go to home page">
+        <img src="{{ url_for('static', filename='logos/ClarifAI-.png') }}" alt="ClarifAI" class="landing-logo full-logo">
+        <span>ClarifAI</span>
+        <span class="course-chip"><i data-lucide="bot"></i><span>CA</span></span>
+    </a>
+    <h2 class="auth-title">{{ role_copy[active_role].title if active_role else 'Welcome back' }}</h2>
+    <p class="auth-subtitle">{{ role_copy[active_role].subtitle if active_role else 'Sign in to your ClarifAI account' }}</p>
 
-            <label class="label">Password</label>
-            <div class="password-row">
-                <input type="password" name="password" id="loginPassword" required>
-                <button class="btn" type="button" data-toggle-password="loginPassword">Peek</button>
-            </div>
+    <form method="post" class="auth-panel auth-form-panel">
+        <input type="hidden" name="role_hint" value="{{ active_role or '' }}">
+        <label class="label">Email Address</label>
+        <input type="email" name="email" id="loginEmail" placeholder="your@email.com" autocomplete="username" required>
 
-            <div class="flex" style="margin-top:14px; flex-direction:column; align-items:stretch;">
-                <button class="btn" type="button" data-open-modal="forgotModal">Forgot password?</button>
-                <button class="btn primary" type="submit">Sign In</button>
-            </div>
-        </form>
-        <p style="margin-top:14px; color:var(--muted);">Don't have an account?
-            <a style="color:var(--accent-2); text-decoration:none;" href="{{ url_for('auth.register') }}">Register here</a>
-        </p>
-    </div>
-    <div class="auth-visual card floating-soft">
-        <p>Unlock academic insights and connect with your community.</p>
-        <img src="{{ url_for('static', filename='logos/ClarifAI_transparent-.png') }}" alt="ClarifAI Visual">
-    </div>
-</section>
-
-<div class="modal" id="forgotModal">
-    <div class="modal-card solid-modal">
-        <div class="space-between">
-            <h3 style="margin-top:0;">Reset Password</h3>
-            <button class="btn" type="button" data-close-modal>Close</button>
+        <div class="auth-field-head">
+            <label class="label" style="margin-bottom:0;">Password</label>
         </div>
-        <p style="color:var(--muted);">Enter your registered email to continue reset flow.</p>
-        <form method="post" action="{{ url_for('auth.reset_request') }}">
-            <label class="label">Email</label>
-            <input type="email" name="email" required>
-            <div style="margin-top:12px;">
-                <button class="btn primary" type="submit">Continue</button>
-            </div>
-        </form>
-    </div>
-</div>
+        <div class="password-row compact">
+            <input type="password" name="password" id="loginPassword" autocomplete="current-password" required>
+            <button class="password-peek-btn" type="button" data-toggle-password="loginPassword" aria-label="Show password" title="Show password">
+                <i data-lucide="eye"></i>
+            </button>
+        </div>
+
+        <label class="remember-row">
+            <input type="checkbox" name="remember_me">
+            <span>Remember me for {{ remember_me_days }} days</span>
+        </label>
+
+        <button class="btn primary full" type="submit">Sign In</button>
+        <p class="auth-forgot-row"><a class="mini-link" href="{{ url_for('auth.reset_request') }}">Forgot password?</a></p>
+
+        {% if allow_self_register %}
+        <p class="auth-help-text">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a></p>
+        {% else %}
+        <p class="auth-help-text">Accounts are pre-registered by admin. Use your issued login credentials.</p>
+        {% endif %}
+    </form>
+
+    <div class="auth-note-icon" aria-hidden="true"><i data-lucide="brain"></i></div>
+</section>
 {% endblock %}

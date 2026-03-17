@@ -2,77 +2,145 @@
 {% block title %}User Management | ClarifAI{% endblock %}
 {% block page_title %}User Management{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:14px; align-items:flex-start; gap:10px;">
-    <div>
-        <h3 style="margin:0;">User Management</h3>
-        <p class="chart-subtitle">Manage account lifecycle, roles, and activation status</p>
-    </div>
-</div>
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> User Management</div>
 
-<div class="card" style="margin-bottom:14px;">
-    <form method="get" class="grid-3" style="align-items:end;">
+    <div class="admin-head-row" style="margin-bottom:12px;">
         <div>
-            <label class="label">Search</label>
-            <input type="text" name="q" value="{{ search }}" placeholder="Name / email / code">
+            <h3 style="margin:0;">User Management</h3>
+            <p class="chart-subtitle">Manage student, faculty, and admin accounts. Control access and account status.</p>
         </div>
-        <div>
-            <label class="label">Role</label>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card kpi-violet"><h3>{{ totals.total }}</h3><p>Total</p></article>
+        <article class="card admin-kpi-card kpi-blue"><h3>{{ totals.students }}</h3><p>Students</p></article>
+        <article class="card admin-kpi-card kpi-teal"><h3>{{ totals.faculty }}</h3><p>Faculty</p></article>
+        <article class="card admin-kpi-card kpi-red"><h3>{{ totals.inactive }}</h3><p>Inactive</p></article>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row users">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by name, email, or roll no...">
             <select name="role">
-                <option value="all" {{ 'selected' if role == 'all' else '' }}>All</option>
+                <option value="all" {{ 'selected' if role == 'all' else '' }}>All Roles</option>
                 <option value="student" {{ 'selected' if role == 'student' else '' }}>Student</option>
                 <option value="faculty" {{ 'selected' if role == 'faculty' else '' }}>Faculty</option>
                 <option value="admin" {{ 'selected' if role == 'admin' else '' }}>Admin</option>
             </select>
-        </div>
-        <div>
-            <label class="label">Status</label>
             <select name="status">
-                <option value="all" {{ 'selected' if status == 'all' else '' }}>All</option>
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All Statuses</option>
                 <option value="active" {{ 'selected' if status == 'active' else '' }}>Active</option>
                 <option value="inactive" {{ 'selected' if status == 'inactive' else '' }}>Inactive</option>
             </select>
-        </div>
-        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
-            <button class="btn primary" type="submit">Apply Filters</button>
+            <select name="course">
+                <option value="all" {{ 'selected' if course == 'all' else '' }}>All Courses</option>
+                {% for item in course_options %}
+                <option value="{{ item }}" {{ 'selected' if course == item else '' }}>{{ item }}</option>
+                {% endfor %}
+            </select>
+            <select name="semester">
+                <option value="all" {{ 'selected' if semester == 'all' else '' }}>All Semesters</option>
+                {% for item in semester_options %}
+                <option value="{{ item }}" {{ 'selected' if semester == item else '' }}>Semester {{ item }}</option>
+                {% endfor %}
+            </select>
+            <select name="section">
+                <option value="all" {{ 'selected' if section == 'all' else '' }}>All Sections</option>
+                {% for item in section_options %}
+                <option value="{{ item }}" {{ 'selected' if section == item else '' }}>Section {{ item }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn primary" type="submit">Apply</button>
             <a class="btn" href="{{ url_for('admin.users') }}">Reset</a>
-        </div>
-    </form>
-</div>
+        </form>
+    </article>
 
-<div class="card">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Code</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for user in users_list %}
-            <tr>
-                <td>{{ user.full_name }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.unique_user_code }}</td>
-                <td>{{ user.role|title }}</td>
-                <td><span class="badge {{ 'approved' if user.is_active else 'rejected' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span></td>
-                <td>{{ user.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
-                <td>
-                    <form method="post" action="{{ url_for('admin.toggle_user_active', user_id=user.id) }}">
-                        <button class="btn {{ 'warning' if user.is_active else 'success' }}" type="submit">
-                            {{ 'Deactivate' if user.is_active else 'Activate' }}
-                        </button>
-                    </form>
-                </td>
-            </tr>
-        {% else %}
-            <tr><td colspan="7">No users found.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <article class="card table-wrap">
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Dept / Id</th>
+                    <th>Last Login</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user in users_list %}
+                {% set role_class = 'student' if user.role == 'student' else ('faculty' if user.role == 'faculty' else 'admin') %}
+                <tr>
+                    <td>
+                        <div class="admin-user-cell">
+                            <span class="admin-avatar {{ role_class }}">{{ user.full_name[:2]|upper }}</span>
+                            <div>
+                                <strong>{{ user.full_name }}</strong>
+                                <small>{{ user.email }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="admin-role-pill {{ role_class }}">{{ user.role|title }}</span></td>
+                    <td>
+                        {% if user.role == 'admin' %}
+                        <span class="faculty-subject-text">System Account</span>
+                        <small class="chart-subtitle" style="display:block;">Protected</small>
+                        {% else %}
+                        <span class="faculty-subject-text">{{ user.course or 'MCA' }}</span>
+                        {% if user.role == 'student' %}
+                        <small class="chart-subtitle" style="display:block;">Sem {{ user.student_profile.current_semester if user.student_profile else '-' }} / Sec {{ user.section or '-' }}</small>
+                        {% else %}
+                        <small class="chart-subtitle" style="display:block;">Section {{ user.section or '-' }}</small>
+                        {% endif %}
+                        <small class="chart-subtitle" style="display:block;">{{ user.unique_user_code }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ user.created_at|ist_datetime('%d %b') }}
+                        <small class="chart-subtitle" style="display:block;">{{ user.created_at|ist_datetime('%I:%M %p') }}</small>
+                    </td>
+                    <td>
+                        <span class="admin-status-dot {{ 'active' if user.is_active else 'inactive' }}">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+                    </td>
+                    <td>
+                        {% if user.role == 'admin' %}
+                        <span class="chart-subtitle" style="display:inline-flex; align-items:center; gap:6px;">
+                            <i data-lucide="shield-check"></i>
+                            Protected
+                        </span>
+                        {% else %}
+                        <div class="flex" style="gap:6px; flex-wrap:wrap;">
+                            {% if user.is_active %}
+                            <form method="post" action="{{ url_for('admin.set_user_active_state', user_id=user.id) }}">
+                                <input type="hidden" name="action" value="deactivate">
+                                <input type="hidden" name="next_url" value="{{ request.full_path }}">
+                                <button class="btn danger" type="submit">Deactivate</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{{ url_for('admin.set_user_active_state', user_id=user.id) }}">
+                                <input type="hidden" name="action" value="activate">
+                                <input type="hidden" name="next_url" value="{{ request.full_path }}">
+                                <button class="btn success" type="submit">Reactivate</button>
+                            </form>
+                            {% endif %}
+                            <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('Delete this user account permanently?');">
+                                <input type="hidden" name="next_url" value="{{ request.full_path }}">
+                                <button class="btn danger" type="submit">Delete</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No users found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="space-between" style="margin-top:10px;">
+            <small class="chart-subtitle">Showing {{ users_list|length }} users</small>
+            <a class="subtle-link" href="{{ url_for('admin.dashboard') }}">Back to dashboard</a>
+        </div>
+    </article>
+</section>
 {% endblock %}

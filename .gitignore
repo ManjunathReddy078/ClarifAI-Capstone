@@ -12,7 +12,21 @@
 01_Code/**/*.log
 01_Code/database/clarifai.db
 01_Code/backend/data/whitelist.csv
+01_Code/backend/.clarifai_secret_key
+01_Code/backend/static/uploads/
+01_Code/**/*.sqlite
+01_Code/**/*.sqlite3
+01_Code/**/*.db-journal
+01_Code/.pytest_cache/
+01_Code/**/.pytest_cache/
+01_Code/.mypy_cache/
+01_Code/**/.mypy_cache/
+01_Code/**/.coverage
+01_Code/**/htmlcov/
+01_Code/**/*.env
+01_Code/**/*.env.*
 
 # editor/system noise
 ~$*
 .DS_Store
+Thumbs.db

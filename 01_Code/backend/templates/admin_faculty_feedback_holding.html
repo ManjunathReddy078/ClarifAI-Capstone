@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Faculty Delivery Queue | ClarifAI{% endblock %}
+{% block page_title %}Faculty Delivery Queue{% endblock %}
+{% block content %}
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Faculty Delivery Queue</div>
+
+    <div class="admin-head-row" style="margin-bottom:10px;">
+        <div>
+            <h3 style="margin:0;">Unregistered Faculty Feedback Queue</h3>
+            <p class="chart-subtitle">Tracks feedback mapped to preset faculty IDs until matching faculty registration occurs.</p>
+        </div>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card kpi-teal"><h3>{{ counts.holding }}</h3><p>Holding</p></article>
+        <article class="card admin-kpi-card kpi-amber"><h3>{{ counts.under_review }}</h3><p>Under Review</p></article>
+        <article class="card admin-kpi-card kpi-violet"><h3>{{ counts.request_edit }}</h3><p>Edit Requested</p></article>
+        <article class="card admin-kpi-card kpi-red"><h3>{{ counts.rejected }}</h3><p>Rejected</p></article>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row users">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by faculty ID, subject, section, sentiment, or content...">
+            <select name="status">
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All Status</option>
+                <option value="holding" {{ 'selected' if status == 'holding' else '' }}>Holding</option>
+                <option value="under_review" {{ 'selected' if status == 'under_review' else '' }}>Under Review</option>
+                <option value="request_edit" {{ 'selected' if status == 'request_edit' else '' }}>Request Edit</option>
+                <option value="rejected" {{ 'selected' if status == 'rejected' else '' }}>Rejected</option>
+            </select>
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('admin.faculty_feedback_holding_page') }}">Reset</a>
+        </form>
+    </article>
+
+    <article class="card table-wrap">
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Class Slot</th>
+                    <th>Subject</th>
+                    <th>Preset Faculty</th>
+                    <th>Sentiment</th>
+                    <th>Status</th>
+                    <th>Submitted At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>
+                        <strong>{{ item.student.full_name if item.student else '-' }}</strong>
+                        <small class="chart-subtitle" style="display:block;">{{ item.student.email if item.student else '-' }}</small>
+                    </td>
+                    <td>
+                        {{ item.course_code }} · Sem {{ item.semester }}
+                        <small class="chart-subtitle" style="display:block;">Section {{ item.section }}</small>
+                    </td>
+                    <td>
+                        <span class="faculty-subject-text">{{ item.subject_code }}</span>
+                        <small class="chart-subtitle" style="display:block;">{{ item.subject }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ item.assigned_faculty_name or '-' }}</strong>
+                        <small class="chart-subtitle" style="display:block;">{{ item.assigned_faculty_id }}</small>
+                        <small class="chart-subtitle" style="display:block;">{{ item.assigned_faculty_email or '-' }}</small>
+                    </td>
+                    <td>
+                        <span class="admin-sentiment-pill {{ item.sentiment }}">{{ item.sentiment|title }}</span>
+                    </td>
+                    <td>
+                        <span class="admin-status-pill">{{ item.status.replace('_', ' ')|title }}</span>
+                    </td>
+                    <td>{{ item.created_at_ist|ist_datetime('%d %b %Y %I:%M %p') if item.created_at_ist else '-' }}</td>
+                    <td>
+                        {% if item.status == 'under_review' %}
+                        <form method="post" action="{{ url_for('admin.moderate_faculty_feedback_holding', item_id=item.id) }}" class="admin-action-form" style="margin:0; border-top:0; padding-top:0;">
+                            <textarea name="note" placeholder="Optional note"></textarea>
+                            <div class="flex" style="gap:6px;">
+                                <button class="btn success" type="submit" name="action" value="approve">Approve to Holding</button>
+                                <button class="btn warning" type="submit" name="action" value="request_edit">Request Edit</button>
+                                <button class="btn danger" type="submit" name="action" value="reject">Reject</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="8">No queue records found for current filters.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}

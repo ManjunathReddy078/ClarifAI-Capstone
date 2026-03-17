@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block title %}Edit Experience | ClarifAI{% endblock %}
+{% block page_title %}Edit Experience{% endblock %}
+{% block content %}
+<section class="student-flow-shell experience-shell">
+    <div class="student-flow-head">
+        <div class="flow-breadcrumb">Community <span>/</span> Experiences <span>/</span> Edit Experience</div>
+        <h2>Edit Your Experience</h2>
+        <p>After saving, sentiment is recalculated. Positive posts publish directly, while neutral or negative posts go to admin moderation.</p>
+    </div>
+
+    <div class="card flow-info-card">
+        <p><i data-lucide="info"></i> <strong>Polarity Workflow</strong><br>
+        Positive submissions are auto-approved. Neutral and negative submissions are routed to admin moderation.</p>
+    </div>
+
+    <form method="post" action="{{ url_for('student.edit_experience', exp_id=exp.id) }}" class="card feedback-wizard" style="margin-top:14px;">
+        <label class="label">Title *</label>
+        <input type="text" name="title" maxlength="160" required value="{{ exp.title }}" placeholder="Example: How I improved my DBMS marks in 3 weeks">
+
+        <label class="label">Category *</label>
+        <select name="category" required>
+            <option value="">Select category</option>
+            {% for c in experience_categories %}
+            <option value="{{ c }}" {{ 'selected' if exp.category == c else '' }}>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <label class="label">Tags *</label>
+        <select id="tagDropdown" class="tag-dropdown-select">
+            <option value="">- Select a tag to add -</option>
+            {% for t in experience_tags %}
+            <option value="{{ t }}" data-label="{{ labelize_exp_tag(t) }}">{{ labelize_exp_tag(t) }}</option>
+            {% endfor %}
+        </select>
+        <div class="tag-chip-bar" id="tagChipBar"></div>
+        <div id="tagHiddenInputs"></div>
+        <div id="experienceEditSeed" data-initial-tags='{{ selected_tags|tojson|forceescape }}' hidden></div>
+        <small class="chart-subtitle" style="display:block; margin-top:4px;">Pick tags from the dropdown; click x on a chip to remove.</small>
+
+        <label class="label">Experience Body * (100-10000 chars)</label>
+        <textarea name="body" id="experienceBody" minlength="100" maxlength="10000" required placeholder="Describe your challenge, what you tried, what worked, and practical advice for others.">{{ exp.body }}</textarea>
+
+        <div class="sentiment-preview-row">
+            <button class="btn" type="button" id="sentimentPreviewBtn"><i data-lucide="scan-text"></i> Check Polarity</button>
+            <span class="sentiment-preview-pill" id="sentimentPreviewPill">No preview yet</span>
+        </div>
+
+        <label class="label">Resource Links (optional)</label>
+        <textarea name="resource_links" maxlength="1200" placeholder="Add one URL or note per line.">{{ exp.resource_links or '' }}</textarea>
+
+        <div class="step-actions dual" style="margin-top:14px;">
+            <a class="btn" href="{{ url_for('student.my_experiences') }}"><i data-lucide="arrow-left"></i> Back to My Experiences</a>
+            <button class="btn success" type="submit"><i data-lucide="save"></i> Save Changes</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+.tag-chip-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    min-height: 36px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+}
+.tag-chip-bar:empty::before {
+    content: 'No tags selected yet';
+    color: var(--muted);
+    font-size: 0.82rem;
+    align-self: center;
+}
+.exp-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(99,102,241,0.18);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #c7d2fe;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.exp-tag-chip button {
+    background: none;
+    border: none;
+    color: #c7d2fe;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.95rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+.exp-tag-chip button:hover { opacity: 1; }
+</style>
+<script>
+(() => {
+    const form = document.querySelector('.feedback-wizard');
+    const bodyInput = document.getElementById('experienceBody');
+    const previewButton = document.getElementById('sentimentPreviewBtn');
+    const previewPill = document.getElementById('sentimentPreviewPill');
+    const dropdown = document.getElementById('tagDropdown');
+    const chipBar = document.getElementById('tagChipBar');
+    const hiddens = document.getElementById('tagHiddenInputs');
+    const selected = new Set();
+    const editSeed = document.getElementById('experienceEditSeed');
+    let initialTags = [];
+    try {
+        initialTags = JSON.parse(editSeed?.dataset.initialTags || '[]');
+    } catch (_) {
+        initialTags = [];
+    }
+
+    const removeTag = (value) => {
+        selected.delete(value);
+        chipBar.querySelector(`[data-value="${value}"]`)?.remove();
+        document.getElementById('tag-hidden-' + value)?.remove();
+    };
+
+    const addTag = (value, label) => {
+        if (!value || selected.has(value)) {
+            return;
+        }
+
+        selected.add(value);
+
+        const chip = document.createElement('span');
+        chip.className = 'exp-tag-chip';
+        chip.dataset.value = value;
+        chip.innerHTML = `${label} <button type="button" aria-label="Remove ${label}">x</button>`;
+        chip.querySelector('button').addEventListener('click', () => removeTag(value));
+        chipBar.appendChild(chip);
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'tags';
+        input.value = value;
+        input.id = 'tag-hidden-' + value;
+        hiddens.appendChild(input);
+    };
+
+    if (dropdown) {
+        dropdown.addEventListener('change', () => {
+            const option = dropdown.options[dropdown.selectedIndex];
+            if (option && option.value) {
+                addTag(option.value, option.textContent.trim());
+                dropdown.selectedIndex = 0;
+            }
+        });
+    }
+
+    if (Array.isArray(initialTags)) {
+        initialTags.forEach((tag) => {
+            const option = dropdown ? dropdown.querySelector(`option[value="${tag}"]`) : null;
+            const label = option ? option.textContent.trim() : tag.replace(/_/g, ' ');
+            addTag(tag, label);
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', (event) => {
+            if (selected.size === 0) {
+                event.preventDefault();
+                if (previewPill) {
+                    previewPill.textContent = 'Select at least one tag before saving.';
+                }
+                dropdown?.focus();
+            }
+        });
+    }
+
+    const sentimentPreview = async () => {
+        const text = (bodyInput?.value || '').trim();
+        if (!text) {
+            if (previewPill) {
+                previewPill.textContent = 'Enter experience text first';
+            }
+            return;
+        }
+
+        if (previewPill) {
+            previewPill.textContent = 'Analyzing...';
+        }
+
+        try {
+            const response = await fetch('{{ url_for("student.sentiment_preview") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+
+            if (!response.ok) {
+                throw new Error('failed');
+            }
+
+            const result = await response.json();
+            const polarity = (result.sentiment || 'neutral').toLowerCase();
+            const confidence = parseInt(result.confidence || '0', 10) || 0;
+            if (previewPill) {
+                previewPill.textContent = `Detected: ${polarity.charAt(0).toUpperCase() + polarity.slice(1)} (${confidence}% confidence)`;
+            }
+        } catch (_) {
+            if (previewPill) {
+                previewPill.textContent = 'Preview unavailable right now';
+            }
+        }
+    };
+
+    previewButton?.addEventListener('click', sentimentPreview);
+})();
+</script>
+{% endblock %}

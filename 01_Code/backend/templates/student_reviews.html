@@ -2,20 +2,16 @@
 {% block title %}My Reviews | ClarifAI{% endblock %}
 {% block page_title %}My Reviews{% endblock %}
 {% block content %}
-<div class="space-between" style="margin-bottom:12px;">
+<div class="space-between student-reviews-header" style="margin-bottom:16px;">
     <div>
         <h3 style="margin:0;">Review Management</h3>
-        <p class="chart-subtitle">Track and manage all submitted review entries</p>
+        <p class="chart-subtitle reviews-subtitle-spaced">Track and manage all submitted review entries</p>
     </div>
-    <button class="btn primary" data-open-modal="reviewModal">Submit Review</button>
+    <a class="btn primary" href="{{ url_for('student.submit_feedback_page') }}">Submit Feedback</a>
 </div>
 
-<div class="card" style="margin-bottom:14px;">
-    <form method="get" class="grid-3" style="align-items:end;">
-        <div>
-            <label class="label">Search</label>
-            <input type="text" name="q" value="{{ search }}" placeholder="Faculty / subject / reason / text">
-        </div>
+<div class="card student-reviews-filter-card" style="margin-bottom:14px;">
+    <form method="get" class="student-reviews-filter-grid" style="align-items:end;">
         <div>
             <label class="label">Sentiment</label>
             <select name="sentiment">
@@ -29,91 +25,114 @@
             <label class="label">Status</label>
             <select name="status">
                 <option value="all" {{ 'selected' if status == 'all' else '' }}>All</option>
+                <option value="holding" {{ 'selected' if status == 'holding' else '' }}>Holding</option>
                 <option value="under_review" {{ 'selected' if status == 'under_review' else '' }}>Under Review</option>
                 <option value="approved" {{ 'selected' if status == 'approved' else '' }}>Approved</option>
                 <option value="rejected" {{ 'selected' if status == 'rejected' else '' }}>Rejected</option>
                 <option value="request_edit" {{ 'selected' if status == 'request_edit' else '' }}>Request Edit</option>
             </select>
         </div>
-        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
+        <div>
+            <label class="label">Faculty (Current Sem {{ current_semester_display }})</label>
+            <select name="faculty">
+                <option value="all" {{ 'selected' if selected_faculty == 'all' else '' }}>All</option>
+                {% for faculty in faculty_filter_options %}
+                    <option value="{{ faculty.id }}" {{ 'selected' if selected_faculty == (faculty.id|string) else '' }}>{{ faculty.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="label">Subject (Current Sem {{ current_semester_display }})</label>
+            <select name="subject">
+                <option value="all" {{ 'selected' if selected_subject == 'all' else '' }}>All</option>
+                {% for subject in subject_filter_options %}
+                    <option value="{{ subject.code }}" {{ 'selected' if selected_subject == subject.code else '' }}>
+                        {{ subject.name }} ({{ subject.code }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="label">Reason</label>
+            <select name="reason">
+                <option value="all" {{ 'selected' if selected_reason == 'all' else '' }}>All</option>
+                {% for reason in reason_filter_options %}
+                    <option value="{{ reason.value }}" {{ 'selected' if selected_reason == reason.value else '' }}>{{ reason.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="label">Tag</label>
+            <select name="tag">
+                <option value="all" {{ 'selected' if selected_tag == 'all' else '' }}>All</option>
+                {% for tag in tag_filter_options %}
+                    <option value="{{ tag.value }}" {{ 'selected' if selected_tag == tag.value else '' }}>{{ tag.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="flex student-reviews-filter-actions" style="grid-column:1 / -1; margin-top:6px;">
             <button class="btn primary" type="submit">Apply Filters</button>
             <a class="btn" href="{{ url_for('student.reviews') }}">Reset</a>
         </div>
     </form>
 </div>
 
-<div class="card">
-    <table class="table">
+<div class="card student-reviews-card">
+    <div class="table-wrap">
+    <table class="table student-reviews-table">
         <thead>
             <tr>
                 <th>Faculty</th>
+                <th>Course Code</th>
                 <th>Subject</th>
                 <th>Semester</th>
                 <th>Reason</th>
+                <th>Tags</th>
+                <th>Class Session</th>
                 <th>Sentiment</th>
                 <th>Status</th>
-                <th>Date</th>
+                <th>Submitted At (IST)</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
         {% for item in feedback_items %}
             <tr>
-                <td>{{ item.faculty.full_name }}</td>
+                <td>{{ item.faculty_name }}</td>
+                <td>{{ item.course_code or '-' }}</td>
                 <td>{{ item.subject }}</td>
                 <td>{{ item.semester }}</td>
-                <td>{{ item.reason }}</td>
+                <td>{{ item.reason.replace('_', ' ')|title }}</td>
+                <td>{{ item.feedback_tags.replace(',', ', ') if item.feedback_tags else '-' }}</td>
+                <td>{{ item.class_session_at|ist_datetime('%d %b %Y %I:%M %p') if item.class_session_at else '-' }}</td>
                 <td>{{ item.sentiment|title }}</td>
-                <td><span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span></td>
-                <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+                <td>
+                    {% if item.status == 'request_edit' %}
+                        <span class="status-inline request-edit">Edit Requested</span>
+                    {% else %}
+                        <span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ item.submitted_at_ist|ist_datetime('%d %b %Y %I:%M %p') if item.submitted_at_ist else '-' }}</td>
                 <td>
                     <div class="flex">
-                        <a class="btn" href="{{ url_for('student.edit_review', feedback_id=item.id) }}">Edit</a>
-                        <form method="post" action="{{ url_for('student.delete_review', feedback_id=item.id) }}" onsubmit="return confirm('Delete this review?');">
-                            <button class="btn danger" type="submit">Delete</button>
-                        </form>
+                        {% if item.can_edit_delete %}
+                            <a class="btn" href="{{ url_for('student.edit_review', feedback_id=item.id) }}">Edit</a>
+                            <form method="post" action="{{ url_for('student.delete_review', feedback_id=item.id) }}" onsubmit="return confirm('Delete this review?');">
+                                <button class="btn danger" type="submit">Delete</button>
+                            </form>
+                        {% else %}
+                            <span class="chart-subtitle">Managed via delivery queue</span>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="8">No reviews found.</td></tr>
+            <tr><td colspan="11">No reviews found.</td></tr>
         {% endfor %}
         </tbody>
     </table>
-</div>
-
-<div class="modal" id="reviewModal">
-    <div class="modal-card">
-        <div class="space-between">
-            <h3 style="margin-top:0;">Submit Review</h3>
-            <button class="btn" type="button" data-close-modal>Close</button>
-        </div>
-        <form method="post" action="{{ url_for('student.create_review') }}">
-            <label class="label">Faculty</label>
-            <select name="faculty_id" required>
-                <option value="">Select faculty</option>
-                {% for faculty in faculty_list %}
-                    <option value="{{ faculty.id }}">{{ faculty.full_name }} ({{ faculty.faculty_id }})</option>
-                {% endfor %}
-            </select>
-
-            <label class="label">Subject / Course</label>
-            <input type="text" name="subject" required>
-
-            <label class="label">Semester</label>
-            <input type="text" name="semester" required>
-
-            <label class="label">Reason</label>
-            <input type="text" name="reason" required>
-
-            <label class="label">Review Text</label>
-            <textarea name="feedback_text" required></textarea>
-
-            <div class="flex" style="margin-top:14px;">
-                <button class="btn primary" type="submit">Submit</button>
-                <button class="btn" type="button" data-close-modal>Cancel</button>
-            </div>
-        </form>
     </div>
 </div>
+
 {% endblock %}

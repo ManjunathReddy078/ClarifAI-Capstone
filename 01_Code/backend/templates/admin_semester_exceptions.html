@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Semester Exceptions | ClarifAI{% endblock %}
+{% block page_title %}Semester Exceptions{% endblock %}
+{% block content %}
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Semester Exceptions</div>
+
+    <div class="admin-head-row" style="margin-bottom:12px;">
+        <div>
+            <h3 style="margin:0;">Semester Mismatch Verification Queue</h3>
+            <p class="chart-subtitle">Approve or reject registration exceptions when selected semester differs from whitelist.</p>
+        </div>
+    </div>
+
+    <div class="grid-4 admin-kpi-grid" style="margin-bottom:14px;">
+        <article class="card admin-kpi-card kpi-blue"><h3>{{ stats.total }}</h3><p>Total Requests</p></article>
+        <article class="card admin-kpi-card kpi-amber"><h3>{{ stats.pending }}</h3><p>Pending</p></article>
+        <article class="card admin-kpi-card kpi-teal"><h3>{{ stats.approved }}</h3><p>Approved</p></article>
+        <article class="card admin-kpi-card kpi-red"><h3>{{ stats.rejected }}</h3><p>Rejected</p></article>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row users">
+            <input type="text" name="q" value="{{ search }}" placeholder="Search by student name, email, PRN, or course...">
+            <select name="status">
+                <option value="pending" {{ 'selected' if status == 'pending' else '' }}>Pending</option>
+                <option value="approved" {{ 'selected' if status == 'approved' else '' }}>Approved</option>
+                <option value="rejected" {{ 'selected' if status == 'rejected' else '' }}>Rejected</option>
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All</option>
+            </select>
+            <button class="btn primary" type="submit">Apply</button>
+            <a class="btn" href="{{ url_for('admin.semester_exceptions_page') }}">Reset</a>
+        </form>
+    </article>
+
+    <article class="card table-wrap">
+        <table class="table admin-user-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Course / Section</th>
+                    <th>Admission</th>
+                    <th>Semester Check</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in requests_list %}
+                <tr>
+                    <td>
+                        <div class="admin-user-cell">
+                            <span class="admin-avatar student">{{ item.full_name[:2]|upper }}</span>
+                            <div>
+                                <strong>{{ item.full_name }}</strong>
+                                <small>{{ item.email }}</small>
+                                <small>{{ item.prn or 'PRN not provided' }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="faculty-subject-text">{{ item.course_code }}</span>
+                        <small class="chart-subtitle" style="display:block;">Section {{ item.section or '-' }}</small>
+                        <small class="chart-subtitle" style="display:block;">Batch {{ item.batch_start_year or '-' }} - {{ item.batch_end_year or '-' }}</small>
+                    </td>
+                    <td>
+                        {{ item.admission_month or '-' }}/{{ item.admission_year or '-' }}
+                        <small class="chart-subtitle" style="display:block;">Requested at {{ item.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                        {% if item.reviewed_at %}
+                        <small class="chart-subtitle" style="display:block;">Reviewed {{ item.reviewed_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small class="chart-subtitle" style="display:block;">Whitelist: Sem {{ item.whitelist_semester or '-' }}</small>
+                        <small class="chart-subtitle" style="display:block;">Suggested: Sem {{ item.suggested_semester or '-' }}</small>
+                        <strong>Requested: Sem {{ item.requested_semester }}</strong>
+                    </td>
+                    <td>
+                        {% if item.status == 'approved' %}
+                            <span class="audit-chip approve">Approved</span>
+                        {% elif item.status == 'rejected' %}
+                            <span class="audit-chip reject">Rejected</span>
+                        {% else %}
+                            <span class="audit-chip warning">Pending</span>
+                        {% endif %}
+                        {% if item.admin and item.reviewed_at %}
+                        <small class="chart-subtitle" style="display:block;">By {{ item.admin.full_name }}</small>
+                        {% endif %}
+                        {% if item.admin_note %}
+                        <small class="chart-subtitle" style="display:block;">"{{ item.admin_note }}"</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.status == 'pending' %}
+                        <form method="post" action="{{ url_for('admin.review_semester_exception', request_id=item.id) }}" class="admin-action-form" style="margin-top:0; border-top:0; padding-top:0;">
+                            <input type="hidden" name="next_url" value="{{ request.full_path if request.query_string else request.path }}">
+                            <textarea name="note" placeholder="Optional admin note" style="min-height:58px;"></textarea>
+                            <div class="flex" style="gap:6px; margin-top:6px;">
+                                <button class="btn success" name="action" value="approve" type="submit">Approve</button>
+                                <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <span class="chart-subtitle">No pending action</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">No semester exception requests found for current filter.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}

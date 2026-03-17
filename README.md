@@ -47,6 +47,7 @@ The app initializes tables automatically with `db.create_all()` and applies addi
 
 - `CLARIFAI_SECRET_KEY`
 - `CLARIFAI_ADMIN_BOOTSTRAP_ENABLED` (`true/false`)
+- `CLARIFAI_ADMIN_FORCE_CREDENTIAL_SYNC` (`true/false`, default `false`)
 - `CLARIFAI_ADMIN_FULL_NAME`
 - `CLARIFAI_ADMIN_EMAIL`
 - `CLARIFAI_ADMIN_PASSWORD`
@@ -54,6 +55,12 @@ The app initializes tables automatically with `db.create_all()` and applies addi
 - `CLARIFAI_ADMIN_SECURITY_ANSWER`
 
 If env vars are not set, defaults from `config.py` are used.
+
+Bootstrap behavior:
+
+- New admin record: credentials are created from configured values.
+- Existing admin record: password is NOT overwritten on startup by default.
+- Set `CLARIFAI_ADMIN_FORCE_CREDENTIAL_SYNC=true` only when you intentionally want to rotate admin credentials via startup.
 
 ## Whitelist Format
 
@@ -83,6 +90,7 @@ This script:
 ## Notes for Demo / Viva
 
 - Use seeded admin or env-configured admin credentials for moderation and user management.
+- Emergency admin recovery script: `01_Code/backend/scripts/emergency_admin_reset.py`
 - Student-to-faculty review routing is sentiment-driven:
   - Positive -> auto approved
   - Neutral/Negative -> under review (admin moderation required)

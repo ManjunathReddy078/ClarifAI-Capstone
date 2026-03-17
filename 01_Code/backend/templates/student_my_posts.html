@@ -12,12 +12,57 @@
 
 <div class="grid-2">
     {% for post in posts %}
-        <div class="card">
-            <h3 style="margin-top:0;">{{ post.title }}</h3>
-            <p>{{ post.content }}</p>
-            <small style="color:var(--muted);">{{ post.created_at.strftime('%d %b %Y %I:%M %p') }}</small>
+        <div class="card board-entry-card" data-intervention-post-id="{{ post.id }}">
+            <div class="space-between" style="align-items:flex-start;">
+                <h3 style="margin-top:0;">{{ post.title }}</h3>
+                <div class="flex" style="gap:8px; align-items:center;">
+                    {% if session.get('role') == 'faculty' %}
+                    <button
+                        class="icon-btn post-link-trigger"
+                        type="button"
+                        data-open-post-detail
+                        data-post-id="{{ post.id }}"
+                        aria-label="Open intervention details"
+                        title="Open intervention details"
+                    >
+                        <i data-lucide="external-link"></i>
+                    </button>
+                    {% endif %}
+                    <span class="tag-pill {{ 'active' if post.status == 'published' else '' }}">{{ post.status|title }}</span>
+                </div>
+            </div>
+            <p>{{ post.content[:220] }}{% if post.content|length > 220 %}...{% endif %}</p>
+            <small style="color:var(--muted);">Created: {{ post.created_at|ist_datetime('%d %b %Y %I:%M %p') }}</small>
+            {% if post.status == 'published' %}
+            <div class="board-entry-meta" style="margin-top:8px;">
+                <div class="board-engagement">
+                    <span><i data-lucide="users"></i> Reach <strong data-metric-for="reach">{{ post.reach_count or 0 }}</strong></span>
+                    <span><i data-lucide="eye"></i> Opened <strong data-metric-for="opened">{{ post.opened_count or 0 }}</strong></span>
+                    <span><i data-lucide="thumbs-up"></i> <strong data-metric-for="likes">{{ post.like_count or 0 }}</strong></span>
+                    <span><i data-lucide="bookmark"></i> Saved <strong data-metric-for="saved">{{ post.bookmark_count or 0 }}</strong></span>
+                </div>
+            </div>
+            {% else %}
+            <p class="chart-subtitle" style="margin-top:6px;">Drafts are visible only to you.</p>
+            {% endif %}
+
+            {% set post_attachments = post.attachments.all() %}
+            {% if session.get('role') == 'faculty' and post_attachments %}
+            <div class="board-entry-tags" style="margin-top:10px;">
+                {% for attachment in post_attachments %}
+                <span class="tag-pill">{{ attachment.file_name }}</span>
+                <a class="btn" href="{{ url_for('static', filename=attachment.file_path) }}" target="_blank" rel="noopener">View</a>
+                <a class="btn" href="{{ url_for('static', filename=attachment.file_path) }}" download>Download</a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="flex" style="margin-top:12px;">
+                {% if post.edit_window_open %}
                 <a class="btn" href="{{ url_for(edit_endpoint, post_id=post.id) }}">Edit</a>
+                {% else %}
+                <button class="btn" type="button" disabled>Edit Locked (24h)</button>
+                {% endif %}
                 <form method="post" action="{{ url_for(delete_endpoint, post_id=post.id) }}" onsubmit="return confirm('Delete this {{ item_label or 'post' }}?');">
                     <button class="btn danger" type="submit">Delete</button>
                 </form>

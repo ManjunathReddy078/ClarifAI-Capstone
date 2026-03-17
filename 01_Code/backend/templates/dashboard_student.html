@@ -2,23 +2,18 @@
 {% block title %}Student Dashboard | ClarifAI{% endblock %}
 {% block page_title %}Student Dashboard{% endblock %}
 {% block content %}
+<section class="student-flow-shell">
+<div class="flow-breadcrumb">Student <span>/</span> Dashboard</div>
+
 <div class="student-hero-card" style="margin-bottom:14px;">
     <div>
         <p class="student-hero-title">Hello, {{ student.full_name.split(' ')[0] }} 👋</p>
-        <p class="student-hero-sub">{{ student.unique_user_code }} · MCA Student Workspace</p>
+        <p class="student-hero-sub">UUID: {{ student.unique_user_code }} · Registration No: {{ student.prn or 'Not Available' }} · {{ student.course }} · Sem {{ current_semester_display }} · Section {{ student.section or 'A' }}</p>
     </div>
-    <div class="student-hero-actions">
-        <a class="btn" href="{{ url_for('student.reviews') }}"><i data-lucide="message-square-text"></i> My Reviews</a>
-        <button class="btn primary" data-open-modal="feedbackModal"><i data-lucide="plus-circle"></i> Submit Feedback</button>
+    <div class="student-hero-actions student-hero-actions-compact">
+        <a class="btn primary" href="{{ url_for('student.submit_feedback_page') }}"><i data-lucide="plus-circle"></i> Submit Feedback</a>
+        <a class="btn" href="{{ url_for('student.profile_settings', tab='profile') }}#semesterExceptionCard"><i data-lucide="graduation-cap"></i> Semester Exception</a>
     </div>
-</div>
-
-<div class="student-pulse-banner" style="margin-bottom:14px;">
-    <div>
-        <p class="student-pulse-main">Mid-Semester Feedback Window is Open</p>
-        <p class="student-pulse-sub">Share high-quality constructive feedback to improve teaching outcomes.</p>
-    </div>
-    <button class="btn primary" data-open-modal="feedbackModal">Submit Now</button>
 </div>
 
 <div class="grid-4" style="margin-bottom:14px;">
@@ -36,7 +31,7 @@
             <i data-lucide="check-circle-2" class="modern-stat-icon"></i>
         </div>
         <h3>{{ chart_payload.status_counts[0] }}</h3>
-        <p>Visible to faculty</p>
+        <p>Published to faculty</p>
     </div>
     <div class="card modern-stat">
         <div class="modern-stat-head">
@@ -51,99 +46,191 @@
             <small>Checklist Progress</small>
             <i data-lucide="list-checks" class="modern-stat-icon"></i>
         </div>
-        <h3>{{ progress_percent }}%</h3>
+        <h3>{{ completed_checklists }}/{{ total_checklists if total_checklists else 0 }}</h3>
+        <p style="margin:4px 0 8px; color:var(--muted);">{{ partial_checklists }} partial · {{ null_checklists }} null</p>
         <div class="progress"><span style="width:{{ progress_percent }}%"></span></div>
     </div>
 </div>
 
-<div class="grid-3" style="margin-bottom:14px;">
+<div class="grid-3 dashboard-chart-grid" style="margin-bottom:14px;">
     <div class="card chart-card">
         <h3 style="margin-top:0;">Department Sentiment Trend</h3>
-        <p class="chart-subtitle">Your submissions over recent months</p>
+        <p class="chart-subtitle">Your feedback contribution over time</p>
         <canvas id="studentTrendChart"></canvas>
     </div>
-    <div class="card chart-card">
+    <div class="card chart-card compact-donut">
         <h3 style="margin-top:0;">Sentiment Distribution</h3>
-        <p class="chart-subtitle">Positive vs neutral vs negative</p>
-        <canvas id="studentSentimentChart"></canvas>
-    </div>
-    <div class="card chart-card">
-        <h3 style="margin-top:0;">Moderation Status</h3>
-        <p class="chart-subtitle">Approval pipeline visibility</p>
-        <canvas id="studentStatusChart"></canvas>
+        <p class="chart-subtitle">Current semester</p>
+        <div class="donut-canvas-wrap">
+            <canvas id="studentSentimentChart"></canvas>
+        </div>
     </div>
 </div>
 
-<div class="grid-2">
+<div class="grid-2 student-dashboard-primary-stack">
     <div class="card">
         <div class="space-between" style="margin-bottom:12px;">
             <h3 style="margin:0;">Recent Submissions</h3>
-            <a class="btn" href="{{ url_for('student.reviews') }}">View All</a>
+            <a class="btn" href="{{ url_for('student.reviews') }}">View all</a>
         </div>
-        <table class="table">
+        <div class="table-wrap">
+        <table class="table student-dashboard-table">
             <thead>
                 <tr>
-                    <th>Faculty</th>
-                    <th>Sentiment</th>
+                    <th>Subject</th>
+                    <th>Reason</th>
                     <th>Status</th>
-                    <th>Submitted On</th>
                 </tr>
             </thead>
             <tbody>
             {% for item in feedback_items %}
                 <tr>
-                    <td>{{ item.faculty.full_name }}</td>
-                    <td>{{ item.sentiment|title }}</td>
-                    <td><span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span></td>
-                    <td>{{ item.created_at.strftime('%d %b %Y %I:%M %p') }}</td>
+                    <td>
+                        <strong>{{ item.subject }}</strong>
+                        <div class="cell-sub">{{ item.created_at|ist_datetime('%d %b %Y') }}</div>
+                    </td>
+                    <td>{{ item.reason.replace('_', ' ')|title }}</td>
+                    <td>
+                        {% if item.status == 'request_edit' %}
+                        <span class="status-inline request-edit">Edit Requested</span>
+                        {% else %}
+                        <span class="badge {{ item.status }}">{{ item.status.replace('_', ' ')|title }}</span>
+                        <div class="cell-sub {{ item.sentiment }}">Sentiment: {{ item.sentiment|title }}</div>
+                        {% endif %}
+                    </td>
                 </tr>
             {% else %}
-                <tr><td colspan="4">No submissions yet.</td></tr>
+                <tr><td colspan="3">No submissions yet.</td></tr>
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 
     <div class="card">
         <div class="space-between" style="margin-bottom:12px;">
             <h3 style="margin:0;">My Checklist</h3>
-            <a class="btn" href="{{ url_for('student.my_checklists') }}">View All</a>
+            <a class="btn" href="{{ url_for('student.my_checklists') }}">View all</a>
         </div>
-        {% for item in checklists[:5] %}
-            <form method="post" action="{{ url_for('student.toggle_checklist', checklist_id=item.id) }}" class="space-between" style="margin-bottom:9px;">
-                <div>
-                    <strong>{{ item.title }}</strong>
-                    <div style="color:var(--muted);">Assigned by {{ item.faculty.full_name }}</div>
+        <form method="get" class="student-dashboard-checklist-filter">
+            <div class="student-dashboard-checklist-grid">
+                <select name="chk_course">
+                    {% for option in checklist_course_options %}
+                        <option value="{{ option }}" {{ 'selected' if checklist_filter_course == option else '' }}>
+                            {{ 'Both (Common Checklists)' if option == 'BOTH' else option }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <select name="chk_category">
+                    <option value="all" {{ 'selected' if checklist_filter_category == 'all' else '' }}>All Categories</option>
+                    {% for option in checklist_category_options %}
+                        <option value="{{ option }}" {{ 'selected' if checklist_filter_category == option else '' }}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+                <select name="chk_semester">
+                    <option value="all" {{ 'selected' if checklist_filter_semester == 'all' else '' }}>All Semesters</option>
+                    {% for sem in checklist_semester_options %}
+                        <option value="{{ sem }}" {{ 'selected' if checklist_filter_semester == sem else '' }}>Semester {{ sem }}</option>
+                    {% endfor %}
+                </select>
+                <select name="chk_section">
+                    <option value="all" {{ 'selected' if checklist_filter_section == 'all' else '' }}>All Sections</option>
+                    {% for sec in checklist_section_options %}
+                        <option value="{{ sec }}" {{ 'selected' if checklist_filter_section == sec else '' }}>Section {{ sec }}</option>
+                    {% endfor %}
+                </select>
+                <select name="chk_status">
+                    <option value="all" {{ 'selected' if checklist_filter_status == 'all' else '' }}>All Status</option>
+                    <option value="null" {{ 'selected' if checklist_filter_status == 'null' else '' }}>Null</option>
+                    <option value="partial" {{ 'selected' if checklist_filter_status == 'partial' else '' }}>Partial</option>
+                    <option value="complete" {{ 'selected' if checklist_filter_status == 'complete' else '' }}>Complete</option>
+                </select>
+            </div>
+            <div class="student-dashboard-checklist-actions">
+                <button class="btn primary" type="submit">Apply</button>
+                <a class="btn" href="{{ url_for('student.dashboard') }}">Reset</a>
+            </div>
+        </form>
+        {% for entry in dashboard_checklists[:3] %}
+            <div class="checklist-mini-row">
+                <label>
+                    <input class="theme-check" type="checkbox" {% if entry.state == 'complete' %}checked{% endif %} disabled>
+                    <span>{{ entry.item.title }}</span>
+                </label>
+                <small>{{ entry.completed_tasks }}/{{ entry.total_tasks }} tasks · {{ entry.state|upper }} · {{ entry.item.faculty.full_name }}</small>
+                <div class="checklist-mini-task-list">
+                    {% for task in entry.task_rows[:3] %}
+                        <label class="checklist-mini-task-item">
+                            <input class="theme-check" type="checkbox" {% if task.is_done %}checked{% endif %} disabled>
+                            <span>{{ task.text }}</span>
+                        </label>
+                    {% endfor %}
+                    {% if entry.task_rows|length > 3 %}
+                        <small class="chart-subtitle">+{{ entry.task_rows|length - 3 }} more checklist item(s)</small>
+                    {% endif %}
                 </div>
-                <button class="btn {{ 'success' if item.is_completed else '' }}" type="submit">
-                    {{ 'Completed' if item.is_completed else 'Mark Done' }}
-                </button>
-            </form>
+                <div class="progress" style="margin-top:8px;"><span style="width:{{ entry.task_percent }}%"></span></div>
+            </div>
         {% else %}
             <p>No checklist items assigned.</p>
         {% endfor %}
+        <div class="progress" style="margin-top:10px;"><span style="width:{{ progress_percent }}%"></span></div>
+        <small class="chart-subtitle">{{ progress_percent }}% task completion across all checklist items</small>
     </div>
+</div>
+
+<div class="card" id="recent-updates" style="margin-top:14px; scroll-margin-top: 72px;">
+    <div class="space-between" style="margin-bottom:12px;">
+        <h3 style="margin:0;">Recent Updates</h3>
+        <a class="btn" href="{{ url_for('student.dashboard') }}#recent-updates">Refresh Section</a>
+    </div>
+    {% for note in recent_notifications %}
+        <div class="notification-row">
+            <span class="notification-dot {{ note.kind }}"></span>
+            <div>
+                <strong>{{ note.title }}</strong>
+                <p>{{ note.message }}</p>
+            </div>
+            <small>{{ note.time|ist_datetime('%d %b %I:%M %p') if note.time else '' }}</small>
+        </div>
+    {% else %}
+        <p>No updates yet.</p>
+    {% endfor %}
 </div>
 
 <div class="card" style="margin-top:14px;">
     <div class="space-between" style="margin-bottom:12px;">
-        <h3 style="margin:0;">Experience & Resource Board</h3>
-        <a class="btn" href="{{ url_for('student.knowledge_board') }}">View All</a>
+        <h3 style="margin:0;">My Experience Reports</h3>
+        <a class="btn" href="{{ url_for('student.experience_feed') }}">Go to Experiences</a>
     </div>
-    <div class="grid-2">
-        {% for post in posts[:6] %}
-            <div style="border:1px solid var(--border); border-radius:12px; padding:12px; background:var(--surface-strong);">
-                <div class="space-between" style="align-items:flex-start; gap:8px;">
-                    <strong>{{ post.title }}</strong>
-                    <span class="badge {{ 'approved' if post.author.role == 'faculty' else 'under_review' }}">{{ 'Resource' if post.author.role == 'faculty' else 'Experience' }}</span>
-                </div>
-                <div style="color:var(--muted); margin-top:6px;">{{ post.author.full_name }} • {{ post.created_at.strftime('%d %b %Y') }}</div>
-            </div>
-        {% else %}
-            <p>No posts yet.</p>
-        {% endfor %}
+    <div class="table-wrap">
+        <table class="student-reviews-table">
+            <thead>
+                <tr>
+                    <th>Report #</th>
+                    <th>Experience</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Submitted At (IST)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in experience_reports %}
+                <tr>
+                    <td>#{{ r.id }}</td>
+                    <td>{{ r.experience.anon_id if r.experience else 'Deleted Experience' }}</td>
+                    <td>{{ r.report_category }}</td>
+                    <td><span class="badge {{ 'badge-warning' if r.status == 'open' else 'badge-success' }}">{{ r.status|title }}</span></td>
+                    <td>{{ r.created_at_ist|ist_datetime('%d-%m-%Y %I:%M %p') if r.created_at_ist else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">You have not submitted any experience reports.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+</section>
 
 <div class="modal" id="feedbackModal">
     <div class="modal-card">
@@ -160,14 +247,35 @@
                 {% endfor %}
             </select>
 
-            <label class="label">Subject / Course</label>
-            <input type="text" name="subject" placeholder="e.g. Data Structures" required>
-
-            <label class="label">Semester</label>
-            <input type="text" name="semester" placeholder="e.g. Semester 2" required>
+            <label class="label">Course Code</label>
+            <select name="course_code" required>
+                <option value="">Select course code</option>
+                {% for item in subject_catalog %}
+                    <option value="{{ item.course_code }}">
+                        {{ item.course_code }} - {{ item.subject_name }} (Sem {{ item.semester }})
+                    </option>
+                {% endfor %}
+            </select>
 
             <label class="label">Reason</label>
-            <input type="text" name="reason" placeholder="e.g. Teaching quality" required>
+            <select name="reason" required>
+                <option value="">Select primary reason</option>
+                {% for tag in fixed_feedback_tags %}
+                    <option value="{{ tag }}">{{ tag.replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="label">Feedback Tags</label>
+            <select name="feedback_tags" multiple required>
+                {% for tag in fixed_feedback_tags %}
+                    <option value="{{ tag }}">{{ tag.replace('_', ' ')|title }}</option>
+                {% endfor %}
+            </select>
+            <small style="color:var(--muted); display:block; margin-top:4px;">Use Ctrl (or Cmd) to select multiple tags.</small>
+
+            <label class="label">Class Session Date/Time</label>
+            <input type="datetime-local" name="class_session_at" data-review-session-time required>
+            <small style="color:var(--muted); display:block; margin-top:4px;">Monday-Saturday only, 08:00 AM to 05:00 PM (IST).</small>
 
             <label class="label">Feedback</label>
             <textarea name="feedback_text" required></textarea>
@@ -217,7 +325,7 @@
     });
 
     new Chart(document.getElementById('studentSentimentChart'), {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: payload.sentiment_labels,
             datasets: [{
@@ -228,21 +336,22 @@
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: textColor } } }
+            cutout: '68%',
+            radius: '90%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    align: 'center',
+                    labels: {
+                        color: textColor,
+                        boxWidth: 14,
+                        boxHeight: 10,
+                        padding: 12,
+                        font: { size: 12 }
+                    }
+                }
+            }
         }
-    });
-
-    new Chart(document.getElementById('studentStatusChart'), {
-        type: 'bar',
-        data: {
-            labels: payload.status_labels,
-            datasets: [{
-                label: 'Count',
-                data: payload.status_counts,
-                backgroundColor: ['#34d399', '#fbbf24', '#f97316', '#fb7185']
-            }]
-        },
-        options: baseOptions
     });
 })();
 </script>

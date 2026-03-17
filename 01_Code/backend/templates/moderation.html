@@ -2,68 +2,78 @@
 {% block title %}Moderation | ClarifAI{% endblock %}
 {% block page_title %}Moderation Queue{% endblock %}
 {% block content %}
-<div class="grid-4" style="margin-bottom:14px;">
-    <div class="card modern-stat"><small>Total Queue</small><h3>{{ kpi.total }}</h3></div>
-    <div class="card modern-stat"><small>Positive</small><h3>{{ kpi.positive }}</h3></div>
-    <div class="card modern-stat"><small>Neutral</small><h3>{{ kpi.neutral }}</h3></div>
-    <div class="card modern-stat"><small>Negative</small><h3>{{ kpi.negative }}</h3></div>
-</div>
+<section class="admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Moderation Queue</div>
 
-<div class="card" style="margin-bottom:14px;">
-    <form method="get" class="grid-3" style="align-items:end;">
+    <div class="admin-head-row" style="margin-bottom:10px;">
         <div>
-            <label class="label">Search</label>
-            <input type="text" name="q" value="{{ search }}" placeholder="Subject / reason / text">
+            <h3 style="margin:0;">Moderation Queue</h3>
+            <p class="chart-subtitle">Review neutral and negative feedback before it reaches faculty. All actions are logged.</p>
         </div>
+    </div>
+
+    <div class="admin-warning-banner" style="margin-bottom:14px;">
+        <i data-lucide="triangle-alert"></i>
         <div>
-            <label class="label">Sentiment</label>
+            <strong>{{ kpi.total }} items awaiting moderation</strong>
+            <p>All neutral and negative feedback requires admin review before publishing to faculty.</p>
+        </div>
+    </div>
+
+    <article class="card admin-filter-card" style="margin-bottom:14px;">
+        <form method="get" class="admin-filter-row">
+            <span class="admin-filter-label"><i data-lucide="filter"></i> Filter by:</span>
             <select name="sentiment">
-                <option value="all" {{ 'selected' if sentiment == 'all' else '' }}>All</option>
-                <option value="positive" {{ 'selected' if sentiment == 'positive' else '' }}>Positive</option>
-                <option value="neutral" {{ 'selected' if sentiment == 'neutral' else '' }}>Neutral</option>
+                <option value="all" {{ 'selected' if sentiment == 'all' else '' }}>All Sentiments</option>
                 <option value="negative" {{ 'selected' if sentiment == 'negative' else '' }}>Negative</option>
+                <option value="neutral" {{ 'selected' if sentiment == 'neutral' else '' }}>Neutral</option>
+                <option value="positive" {{ 'selected' if sentiment == 'positive' else '' }}>Positive</option>
             </select>
-        </div>
-        <div>
-            <label class="label">Faculty</label>
             <select name="faculty">
-                <option value="all">All</option>
+                <option value="all">All Subjects</option>
                 {% for fac in faculty_list %}
                     <option value="{{ fac.email }}" {{ 'selected' if faculty == fac.email else '' }}>{{ fac.full_name }}</option>
                 {% endfor %}
             </select>
-        </div>
-        <div class="flex" style="grid-column:1 / -1; margin-top:6px;">
-            <button class="btn primary" type="submit">Apply Filters</button>
+            <input type="text" name="q" value="{{ search }}" placeholder="Search subject or content...">
+            <button class="btn primary" type="submit">Apply</button>
             <a class="btn" href="{{ url_for('admin.moderation_page') }}">Reset</a>
-        </div>
-    </form>
-</div>
+            <span class="admin-result-count">{{ pending_feedback|length }} results</span>
+        </form>
+    </article>
 
-<div class="card">
-    {% for item in pending_feedback %}
-        <div class="card" style="margin-bottom:10px; background:#161b22; border-color:#30363d;">
-            <div class="space-between" style="margin-bottom:8px; align-items:flex-start; gap:8px;">
-                <div>
-                    <strong>{{ item.subject }}</strong>
-                    <div style="color:var(--muted);">{{ item.reason }} • {{ item.semester }} • {{ item.faculty.full_name }}</div>
+    <div class="admin-moderation-list">
+        {% for item in pending_feedback %}
+            <article class="card admin-moderation-item">
+                <div class="space-between" style="align-items:flex-start; gap:10px;">
+                    <div>
+                        <h4>{{ item.subject }}
+                            <span class="admin-sentiment-pill {{ item.sentiment }}">{{ item.sentiment|title }}</span>
+                            <span class="admin-status-pill">Under Review</span>
+                        </h4>
+                        <small>{{ item.reason }} · {{ item.semester }} · {{ item.faculty.full_name }}</small>
+                        <p>{{ item.feedback_text }}</p>
+                        <div class="chart-subtitle">NLP: {{ item.sentiment|title }} · {{ item.created_at|ist_datetime('%d %b %Y') }}</div>
+                    </div>
+                    <div class="admin-action-icons">
+                        <i data-lucide="circle-check-big"></i>
+                        <i data-lucide="pencil"></i>
+                        <i data-lucide="x"></i>
+                    </div>
                 </div>
-                <span class="badge under_review">{{ item.sentiment|title }}</span>
-            </div>
-            <p style="margin-top:0; color:var(--muted);">{{ item.feedback_text }}</p>
-            <form method="post" action="{{ url_for('admin.moderate', feedback_id=item.id) }}">
-                <input type="hidden" name="next_url" value="{{ request.full_path if request.query_string else request.path }}">
-                <label class="label">Admin Note (optional)</label>
-                <textarea name="note"></textarea>
-                <div class="flex" style="margin-top:10px;">
-                    <button class="btn success" name="action" value="approve" type="submit">Approve</button>
-                    <button class="btn warning" name="action" value="request_edit" type="submit">Request Edit</button>
-                    <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
-                </div>
-            </form>
-        </div>
-    {% else %}
-        <p>Queue is empty.</p>
-    {% endfor %}
-</div>
+                <form method="post" action="{{ url_for('admin.moderate', feedback_id=item.id) }}" class="admin-action-form">
+                    <input type="hidden" name="next_url" value="{{ request.full_path if request.query_string else request.path }}">
+                    <textarea name="note" placeholder="Add moderation note (optional)"></textarea>
+                    <div class="flex">
+                        <button class="btn success" name="action" value="approve" type="submit">Approve</button>
+                        <button class="btn warning" name="action" value="request_edit" type="submit">Request Edit</button>
+                        <button class="btn danger" name="action" value="reject" type="submit">Reject</button>
+                    </div>
+                </form>
+            </article>
+        {% else %}
+            <article class="card"><p style="margin:0;">Queue is empty.</p></article>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}

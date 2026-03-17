@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% block title %}Experience Moderation | ClarifAI{% endblock %}
+{% block page_title %}Experience Moderation{% endblock %}
+{% block content %}
+<section class="student-flow-shell experience-admin-shell">
+    <div class="flow-breadcrumb">Admin <span>/</span> Experience Moderation</div>
+
+    <div class="space-between" style="margin-bottom:12px; align-items:flex-end;">
+        <div>
+            <h2 style="margin:0;">Review Student Experiences</h2>
+            <p class="chart-subtitle">Approve, reject, or request edits for flagged or pending entries.</p>
+        </div>
+        <a class="btn" href="{{ url_for('admin.experience_reports_list') }}"><i data-lucide="flag"></i> View Reports</a>
+    </div>
+
+    <form class="card board-filter-card experience-filter-card" method="get" action="{{ url_for('admin.experience_moderation') }}">
+        <div class="student-reviews-filter-grid">
+            <div>
+                <label class="label">Status</label>
+                <select name="status">
+                    <option value="pending" {{ 'selected' if status_filter == 'pending' else '' }}>Pending</option>
+                    <option value="approved" {{ 'selected' if status_filter == 'approved' else '' }}>Approved</option>
+                    <option value="rejected" {{ 'selected' if status_filter == 'rejected' else '' }}>Rejected</option>
+                    <option value="request_edit" {{ 'selected' if status_filter == 'request_edit' else '' }}>Request Edit</option>
+                    <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All</option>
+                </select>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:8px;">
+                <button class="btn primary" type="submit"><i data-lucide="filter"></i> Apply</button>
+            </div>
+            <div style="display:flex; align-items:flex-end; gap:8px;">
+                <span class="badge badge-warning">Pending: {{ counts.pending }}</span>
+                <span class="badge badge-success">Approved: {{ counts.approved }}</span>
+                <span class="badge badge-danger">Rejected: {{ counts.rejected }}</span>
+                <span class="badge badge-info">Need Edit: {{ counts.request_edit }}</span>
+            </div>
+        </div>
+    </form>
+
+    <div class="grid-2">
+        {% for exp in experiences %}
+        <article class="card board-entry-card experience-admin-card">
+            <div class="space-between" style="align-items:flex-start;">
+                <div>
+                    <h3 style="margin:0 0 6px;">{{ exp.title }}</h3>
+                    <small>{{ exp.anon_id }} | {{ exp.category }} | {{ exp.created_at|ist_datetime('%d %b %Y %I:%M %p') if exp.created_at else '-' }}</small>
+                </div>
+                <span class="badge {{ 'badge-success' if exp.status == 'approved' else ('badge-danger' if exp.status == 'rejected' else ('badge-info' if exp.status == 'request_edit' else 'badge-warning')) }}">{{ exp.status.replace('_', ' ')|title }}</span>
+            </div>
+            <p style="white-space:pre-wrap; margin-top:10px;">{{ exp.body[:700] }}{% if exp.body|length > 700 %}...{% endif %}</p>
+            <p class="chart-subtitle"><strong>Tags:</strong> {{ exp.tags or '-' }}</p>
+            <p class="chart-subtitle"><strong>Sentiment:</strong> {{ exp.sentiment|title }} ({{ '%.2f'|format(exp.sentiment_confidence or 0) }})</p>
+
+            <div class="flex" style="justify-content:flex-end; margin-top:8px;">
+                <button
+                    class="btn"
+                    type="button"
+                    data-open-admin-experience-detail
+                    data-detail-url="{{ url_for('admin.experience_moderation_detail', exp_id=exp.id) }}"
+                >
+                    <i data-lucide="expand"></i> Open Full Detail
+                </button>
+            </div>
+
+            <form method="post" action="{{ url_for('admin.decide_experience', exp_id=exp.id) }}" style="margin-top:10px;">
+                <label class="label">Admin Note (optional)</label>
+                <textarea name="admin_note" maxlength="1000" placeholder="Optional note for context or feedback.">{{ exp.admin_note or '' }}</textarea>
+                <div class="flex" style="gap:8px; justify-content:flex-end; margin-top:10px;">
+                    <button class="btn success" type="submit" name="decision" value="approve"><i data-lucide="check"></i> Approve</button>
+                    <button class="btn warning" type="submit" name="decision" value="request_edit"><i data-lucide="edit-3"></i> Request Edit</button>
+                    <button class="btn danger" type="submit" name="decision" value="reject"><i data-lucide="x"></i> Reject</button>
+                </div>
+            </form>
+        </article>
+        {% else %}
+        <div class="card"><p>No experience records available for this filter.</p></div>
+        {% endfor %}
+    </div>
+
+    <div class="modal intervention-detail-modal" id="adminExperienceDetailModal">
+        <div class="modal-card intervention-detail-card experience-report-modal">
+            <div class="space-between" style="gap:10px; align-items:flex-start;">
+                <div>
+                    <h3 id="adminExperienceDetailTitle" style="margin:0;">Experience Details</h3>
+                    <p id="adminExperienceDetailMeta" class="chart-subtitle" style="margin:6px 0 0;">Loading...</p>
+                </div>
+                <button class="btn" type="button" data-close-modal><i data-lucide="x"></i></button>
+            </div>
+
+            <div class="intervention-detail-target" id="adminExperienceDetailTags" style="margin-top:10px;"></div>
+
+            <div class="intervention-detail-section">
+                <h4>Experience Body</h4>
+                <p id="adminExperienceDetailBody" style="white-space:pre-wrap;">Loading content...</p>
+            </div>
+
+            <div class="intervention-detail-section" id="adminExperienceLinksWrap" hidden>
+                <h4>Resource Links</h4>
+                <div class="intervention-detail-links" id="adminExperienceDetailLinks"></div>
+            </div>
+
+            <div class="intervention-detail-section" id="adminExperienceNoteWrap" hidden>
+                <h4>Admin Note</h4>
+                <p id="adminExperienceAdminNote" style="white-space:pre-wrap;"></p>
+            </div>
+
+            <div class="intervention-detail-section">
+                <div class="intervention-detail-metrics">
+                    <span><i data-lucide="thumbs-up"></i> Upvotes: <strong id="adminExperienceUpvotes">0</strong></span>
+                    <span><i data-lucide="brain"></i> Polarity: <strong id="adminExperienceSentiment">-</strong></span>
+                    <span><i data-lucide="badge-percent"></i> Confidence: <strong id="adminExperienceConfidence">0%</strong></span>
+                    <span><i data-lucide="shield-check"></i> Status: <strong id="adminExperienceStatus">-</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(() => {
+    const modal = document.getElementById('adminExperienceDetailModal');
+    const titleNode = document.getElementById('adminExperienceDetailTitle');
+    const metaNode = document.getElementById('adminExperienceDetailMeta');
+    const tagsNode = document.getElementById('adminExperienceDetailTags');
+    const bodyNode = document.getElementById('adminExperienceDetailBody');
+    const linksWrap = document.getElementById('adminExperienceLinksWrap');
+    const linksNode = document.getElementById('adminExperienceDetailLinks');
+    const noteWrap = document.getElementById('adminExperienceNoteWrap');
+    const noteNode = document.getElementById('adminExperienceAdminNote');
+    const upvotesNode = document.getElementById('adminExperienceUpvotes');
+    const sentimentNode = document.getElementById('adminExperienceSentiment');
+    const confidenceNode = document.getElementById('adminExperienceConfidence');
+    const statusNode = document.getElementById('adminExperienceStatus');
+    const triggers = Array.from(document.querySelectorAll('[data-open-admin-experience-detail]'));
+
+    if (!modal || !triggers.length) {
+        return;
+    }
+
+    const reset = () => {
+        titleNode.textContent = 'Experience Details';
+        metaNode.textContent = 'Loading...';
+        tagsNode.innerHTML = '';
+        bodyNode.textContent = 'Loading content...';
+        linksNode.innerHTML = '';
+        linksWrap.hidden = true;
+        noteWrap.hidden = true;
+        noteNode.textContent = '';
+        upvotesNode.textContent = '0';
+        sentimentNode.textContent = '-';
+        confidenceNode.textContent = '0%';
+        statusNode.textContent = '-';
+    };
+
+    const renderLinks = (links) => {
+        linksNode.innerHTML = '';
+        if (!Array.isArray(links) || !links.length) {
+            linksWrap.hidden = true;
+            return;
+        }
+
+        linksWrap.hidden = false;
+        links.forEach((link) => {
+            const row = document.createElement('div');
+            row.className = 'intervention-attachment-row';
+
+            const name = document.createElement('span');
+            name.textContent = link;
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+
+            const openBtn = document.createElement('a');
+            openBtn.className = 'btn primary';
+            openBtn.href = link;
+            openBtn.target = '_blank';
+            openBtn.rel = 'noopener';
+            openBtn.textContent = 'Open Link';
+
+            actions.appendChild(openBtn);
+            row.appendChild(name);
+            row.appendChild(actions);
+            linksNode.appendChild(row);
+        });
+    };
+
+    const renderTags = (payload) => {
+        tagsNode.innerHTML = '';
+        const chips = [`ID: ${payload.anon_id || '-'}`, `Category: ${payload.category || '-'}`];
+        if (Array.isArray(payload.tags)) {
+            payload.tags.forEach((tag) => chips.push(tag));
+        }
+
+        chips.forEach((value) => {
+            const chip = document.createElement('span');
+            chip.className = 'tag-pill';
+            chip.textContent = value;
+            tagsNode.appendChild(chip);
+        });
+    };
+
+    const renderPayload = (payload) => {
+        titleNode.textContent = payload.title || 'Experience Details';
+        metaNode.textContent = `${payload.created_at_ist || '-'} IST`;
+        bodyNode.textContent = payload.body || '';
+        renderTags(payload || {});
+        renderLinks(payload.resource_links || []);
+
+        if ((payload.admin_note || '').trim()) {
+            noteWrap.hidden = false;
+            noteNode.textContent = payload.admin_note;
+        }
+
+        upvotesNode.textContent = String(payload.upvote_count || 0);
+        const sentiment = (payload.sentiment || 'neutral').toLowerCase();
+        sentimentNode.textContent = sentiment.charAt(0).toUpperCase() + sentiment.slice(1);
+        confidenceNode.textContent = `${parseInt(payload.sentiment_confidence || '0', 10) || 0}%`;
+        statusNode.textContent = (payload.status || '-').replace('_', ' ');
+    };
+
+    triggers.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const detailUrl = button.getAttribute('data-detail-url');
+            if (!detailUrl) {
+                return;
+            }
+
+            reset();
+            modal.classList.add('active');
+
+            try {
+                const response = await fetch(detailUrl, { headers: { Accept: 'application/json' } });
+                if (!response.ok) {
+                    throw new Error('failed');
+                }
+                const payload = await response.json();
+                renderPayload(payload || {});
+            } catch (_) {
+                titleNode.textContent = 'Unable to load details';
+                metaNode.textContent = 'Try again';
+                bodyNode.textContent = 'We could not fetch experience details right now.';
+            }
+
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

@@ -1,18 +1,154 @@
 {% extends 'base.html' %}
-{% block title %}{{ page_title or 'New Knowledge Post' }} | ClarifAI{% endblock %}
-{% block page_title %}{{ page_title or 'Share Knowledge' }}{% endblock %}
+{% block title %}{{ page_title or 'Intervention Resource' }} | ClarifAI{% endblock %}
+{% block page_title %}{{ page_title or 'Intervention Resource' }}{% endblock %}
 {% block content %}
+{% set values = form_values or {} %}
+{% set selected_course = values.get('target_course', 'MCA') %}
+{% set selected_semester = values.get('target_semester', 'all') %}
+{% set selected_section = values.get('target_section', 'ALL') %}
 <div class="card">
-    <form method="post">
-        <label class="label">Title</label>
-        <input type="text" name="title" required>
+    <form method="post" enctype="multipart/form-data">
+        <div class="space-between" style="align-items:flex-start; margin-bottom:8px;">
+            <div>
+                <h3 style="margin:0;">{{ page_title or 'Intervention Resource' }}</h3>
+                <p class="chart-subtitle" style="margin:4px 0 0;">Faculty-only authoring. Students receive published interventions based on selected targets.</p>
+            </div>
+            {% if is_edit and post and post.status == 'published' %}
+            <span class="tag-pill active">Published</span>
+            {% elif is_edit and post and post.status == 'draft' %}
+            <span class="tag-pill">Draft</span>
+            {% endif %}
+        </div>
 
-        <label class="label">Content</label>
-        <textarea name="content" required></textarea>
+        <label class="label">Title *</label>
+        <input type="text" name="title" maxlength="180" value="{{ values.get('title', '') }}" required>
 
-        <div style="margin-top:14px;">
-            <button class="btn primary" type="submit">{{ submit_label or 'Publish Post' }}</button>
+        <label class="label">Core Guidance *</label>
+        <textarea name="content" minlength="20" required>{{ values.get('content', '') }}</textarea>
+
+        <div class="grid-3" style="margin-top:12px;">
+            <div>
+                <label class="label">Target Course *</label>
+                <select name="target_course" id="targetCourseSelect" required>
+                    <option value="">Select course</option>
+                    {% for course in course_options or [] %}
+                    <option value="{{ course }}" {{ 'selected' if course == selected_course else '' }}>{{ course }}</option>
+                    {% endfor %}
+                </select>
+                <small class="chart-subtitle">Post can target one course only.</small>
+            </div>
+            <div>
+                <label class="label">Target Semester *</label>
+                <select name="target_semester" id="targetSemesterSelect" required data-selected="{{ selected_semester }}">
+                    {% for semester in (semester_options_by_course or {}).get(selected_course, ['all', '1', '2', '3', '4']) %}
+                    <option value="{{ semester }}" {{ 'selected' if semester == selected_semester else '' }}>{{ 'All Semesters' if semester == 'all' else ('Semester ' ~ semester) }}</option>
+                    {% endfor %}
+                </select>
+                <small class="chart-subtitle">MCA shows 4 semesters, BCA shows 6 semesters.</small>
+            </div>
+            <div>
+                <label class="label">Target Section *</label>
+                <select name="target_section" required>
+                    {% for section in section_options or [] %}
+                    <option value="{{ section }}" {{ 'selected' if section == selected_section else '' }}>{{ 'All Sections' if section == 'ALL' else ('Section ' ~ section) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <details style="margin-top:12px;">
+            <summary style="cursor:pointer; font-weight:600;">Optional structured details</summary>
+            <div style="margin-top:10px;">
+                <label class="label">Problem Context</label>
+                <textarea name="problem_context">{{ values.get('problem_context', '') }}</textarea>
+
+                <label class="label">Solution Steps</label>
+                <textarea name="solution_steps" placeholder="Use numbered lines for better readability.">{{ values.get('solution_steps', '') }}</textarea>
+
+                <label class="label">Resources and References</label>
+                <textarea name="resource_references" placeholder="Books, links, or notes used.">{{ values.get('resource_references', '') }}</textarea>
+
+                <label class="label">Outcome</label>
+                <textarea name="outcome_result" placeholder="Expected or observed result for students.">{{ values.get('outcome_result', '') }}</textarea>
+            </div>
+        </details>
+
+        <label class="label" style="margin-top:12px;">External Resource Links (one per line)</label>
+        <textarea name="resource_links" placeholder="https://...">{{ values.get('resource_links', '') }}</textarea>
+
+        <label class="label">File Attachments</label>
+        <input type="file" name="attachments" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.webp">
+        <small class="chart-subtitle">Up to 5 files, maximum 30MB each. Students can download files directly.</small>
+
+        {% if is_edit and existing_attachments %}
+        <div class="card" style="margin-top:10px; padding:12px;">
+            <h4 style="margin:0 0 8px;">Existing Attachments</h4>
+            {% for attachment in existing_attachments %}
+            <label style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                <input type="checkbox" name="remove_attachment_ids" value="{{ attachment.id }}">
+                <span>{{ attachment.file_name }} ({{ '%.2f'|format((attachment.file_size or 0) / (1024 * 1024)) }} MB) - remove</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if is_edit and not edit_window_open %}
+        <div class="flash warning" style="margin-top:12px;">Published interventions can be edited only within 24 hours.</div>
+        {% endif %}
+
+        <div class="flex" style="margin-top:14px;">
+            {% if not is_edit or (is_edit and post and post.status == 'draft') %}
+            <button class="btn" type="submit" name="post_status" value="draft" {{ 'disabled' if is_edit and not edit_window_open else '' }}>{{ draft_label or 'Save Draft' }}</button>
+            {% endif %}
+            <button class="btn primary" type="submit" name="post_status" value="published" {{ 'disabled' if is_edit and not edit_window_open else '' }}>{{ submit_label or 'Publish Resource' }}</button>
+            <a class="btn" href="{{ url_for('faculty.my_resources') }}">Back</a>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ super() }}
+<script>
+(() => {
+    const courseSelect = document.getElementById('targetCourseSelect');
+    const semesterSelect = document.getElementById('targetSemesterSelect');
+    if (!courseSelect || !semesterSelect) return;
+
+    const semesterMap = {{ semester_options_by_course | tojson }};
+
+    const renderSemesterOptions = () => {
+        const selectedCourse = (courseSelect.value || 'MCA').toUpperCase();
+        const selectedValue = semesterSelect.dataset.selected || semesterSelect.value || 'all';
+        const options = semesterMap[selectedCourse] || ['all'];
+
+        semesterSelect.innerHTML = '';
+        options.forEach((value) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value === 'all' ? 'All Semesters' : `Semester ${value}`;
+            if (value === selectedValue) {
+                option.selected = true;
+            }
+            semesterSelect.appendChild(option);
+        });
+
+        if (!options.includes(selectedValue)) {
+            semesterSelect.value = 'all';
+        }
+        semesterSelect.dataset.selected = semesterSelect.value;
+    };
+
+    courseSelect.addEventListener('change', () => {
+        semesterSelect.dataset.selected = 'all';
+        renderSemesterOptions();
+    });
+
+    semesterSelect.addEventListener('change', () => {
+        semesterSelect.dataset.selected = semesterSelect.value;
+    });
+
+    renderSemesterOptions();
+})();
+</script>
 {% endblock %}
