@@ -535,6 +535,19 @@ def create_app() -> Flask:
 
         return render_template("home.html", dashboard_url=dashboard_url, user_role=role)
 
+    @app.errorhandler(404)
+    def page_not_found(error):
+        return render_template("error_404.html"), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        db.session.rollback()
+        return render_template("error_500.html"), 500
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        return render_template("error_403.html"), 403
+
     with app.app_context():
         db.create_all()
         _ensure_schema_updates()

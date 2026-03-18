@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Internal Server Error{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 60px 20px; max-width: 600px; margin: 0 auto;">
+    <div style="font-size: 120px; font-weight: bold; color: var(--danger); margin-bottom: 20px;">500</div>
+    <h1 style="font-size: 32px; margin-bottom: 16px;">Internal Server Error</h1>
+    <p style="color: var(--muted); font-size: 18px; margin-bottom: 32px;">
+        Something went wrong on our end. We're working to fix it. Please try again later.
+    </p>
+    <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="{{ url_for('home') }}" class="btn btn-primary">Go to Home</a>
+        {% if session.get('user_id') %}
+            {% if session.get('role') == 'student' %}
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-secondary">Go to Dashboard</a>
+            {% elif session.get('role') == 'faculty' %}
+                <a href="{{ url_for('faculty.dashboard') }}" class="btn btn-secondary">Go to Dashboard</a>
+            {% elif session.get('role') == 'admin' %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Go to Dashboard</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

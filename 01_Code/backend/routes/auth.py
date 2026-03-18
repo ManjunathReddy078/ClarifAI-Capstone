@@ -566,7 +566,6 @@ def login():
 	if request.method == "POST":
 		email = request.form.get("email", "").strip().lower()
 		password = request.form.get("password", "")
-		remember_me = request.form.get("remember_me") in {"on", "true", "1", "yes"}
 
 		user = User.query.filter_by(email=email, is_active=True).first()
 		if not user or not user.check_password(password):
@@ -574,7 +573,6 @@ def login():
 			return render_template(
 				"login.html",
 				selected_role=selected_role,
-				remember_me_days=current_app.config.get("REMEMBER_ME_DAYS", 3),
 				allow_self_register=current_app.config.get("ALLOW_SELF_REGISTER", False),
 			)
 
@@ -584,12 +582,13 @@ def login():
 		user.last_login_at = now_utc
 		db.session.commit()
 
+		session.clear()
 		session["user_id"] = user.id
 		session["role"] = user.role
 		session["full_name"] = user.full_name
 		session["email"] = user.email
 		session["user_code"] = user.unique_user_code
-		session.permanent = remember_me
+		session.permanent = False
 		session.modified = True
 
 		if user.role == "student":
@@ -606,7 +605,6 @@ def login():
 	return render_template(
 		"login.html",
 		selected_role=selected_role,
-		remember_me_days=current_app.config.get("REMEMBER_ME_DAYS", 3),
 		allow_self_register=current_app.config.get("ALLOW_SELF_REGISTER", False),
 	)
 

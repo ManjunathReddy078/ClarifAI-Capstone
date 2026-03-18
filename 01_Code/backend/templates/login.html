@@ -31,12 +31,10 @@
             </button>
         </div>
 
-        <label class="remember-row">
-            <input type="checkbox" name="remember_me">
-            <span>Remember me for {{ remember_me_days }} days</span>
-        </label>
-
-        <button class="btn primary full" type="submit">Sign In</button>
+        <div style="margin-top: 24px;">
+            <button class="btn primary full" type="submit">Sign In</button>
+        </div>
+        
         <p class="auth-forgot-row"><a class="mini-link" href="{{ url_for('auth.reset_request') }}">Forgot password?</a></p>
 
         {% if allow_self_register %}
