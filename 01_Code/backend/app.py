@@ -414,7 +414,6 @@ def create_app() -> Flask:
     def _inject_admin_notification_count():
         unread_suggestions_count = 0
         pending_semester_exceptions_count = 0
-        role_notification_badge_count = 0
         pending_experience_moderation_count = 0
         open_experience_reports_count = 0
         pending_faculty_feedback_count = 0
@@ -430,40 +429,10 @@ def create_app() -> Flask:
             pending_faculty_feedback_count = PendingFacultyFeedback.query.filter(
                 PendingFacultyFeedback.status.in_(["holding", "under_review"])
             ).count()
-            role_notification_badge_count = (
-                unread_suggestions_count
-                + pending_semester_exceptions_count
-                + moderation_queue_count
-                + pending_experience_moderation_count
-                + open_experience_reports_count
-                + pending_faculty_feedback_count
-            )
-        elif user_id and role == "student":
-            feedback_updates_count = Feedback.query.filter(
-                Feedback.student_id == user_id,
-                Feedback.status.in_(["approved", "request_edit", "rejected"]),
-            ).count()
-            pending_checklist_count = Checklist.query.filter_by(student_id=user_id, is_completed=False).count()
-            intervention_updates_count = KnowledgeNotification.query.filter_by(user_id=user_id, is_read=False).count()
-            role_notification_badge_count = feedback_updates_count + pending_checklist_count + intervention_updates_count
-        elif user_id and role == "faculty":
-            approved_feedback_count = Feedback.query.filter_by(faculty_id=user_id, status="approved").count()
-            checklist_rows = Checklist.query.filter_by(faculty_id=user_id).all()
-            grouped_completion = {}
-            for row in checklist_rows:
-                group_id = _extract_checklist_group_id(row.description, row.id)
-                if group_id not in grouped_completion:
-                    grouped_completion[group_id] = True
-                if not row.is_completed:
-                    grouped_completion[group_id] = False
-
-            active_checklists_count = len([done for done in grouped_completion.values() if not done])
-            role_notification_badge_count = approved_feedback_count + active_checklists_count
 
         return {
             "unread_suggestions_count": unread_suggestions_count,
             "pending_semester_exceptions_count": pending_semester_exceptions_count,
-            "role_notification_badge_count": role_notification_badge_count,
             "pending_experience_moderation_count": pending_experience_moderation_count,
             "open_experience_reports_count": open_experience_reports_count,
             "pending_faculty_feedback_count": pending_faculty_feedback_count,

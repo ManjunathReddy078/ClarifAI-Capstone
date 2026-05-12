@@ -1,4 +1,6 @@
 *
+!.vscode/
+!.vscode/**
 !01_Code/
 !01_Code/**
 !README.md
@@ -30,3 +32,6 @@
 ~$*
 .DS_Store
 Thumbs.db
+
+# local reference brain book
+Reference_BrainBook/

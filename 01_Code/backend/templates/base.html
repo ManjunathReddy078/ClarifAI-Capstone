@@ -106,14 +106,14 @@
                     {% elif session.get('role') == 'admin' %}
                         <a class="{{ 'active' if request.endpoint == 'admin.dashboard' else '' }}" href="{{ url_for('admin.dashboard') }}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.moderation_page' else '' }}" href="{{ url_for('admin.moderation_page') }}"><i data-lucide="shield-check"></i> Moderation Queue</a>
-                        <a class="{{ 'active' if request.endpoint == 'admin.faculty_feedback_holding_page' else '' }}" href="{{ url_for('admin.faculty_feedback_holding_page') }}"><i data-lucide="inbox"></i> Faculty Delivery Queue {% if pending_faculty_feedback_count %}<span class="inline-badge">{{ pending_faculty_feedback_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.faculty_feedback_holding_page' else '' }}" href="{{ url_for('admin.faculty_feedback_holding_page') }}"><i data-lucide="inbox"></i> Faculty Delivery Queue</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.academic_mapping_page' else '' }}" href="{{ url_for('admin.academic_mapping_page') }}"><i data-lucide="network"></i> Academic Mapping</a>
-                        <a class="{{ 'active' if request.endpoint in ['admin.semester_exceptions_page'] else '' }}" href="{{ url_for('admin.semester_exceptions_page') }}"><i data-lucide="graduation-cap"></i> Semester Exceptions {% if pending_semester_exceptions_count %}<span class="inline-badge">{{ pending_semester_exceptions_count }}</span>{% endif %}</a>
-                        <a class="{{ 'active' if request.endpoint in ['admin.suggestions_page'] else '' }}" href="{{ url_for('admin.suggestions_page') }}"><i data-lucide="messages-square"></i> Suggestions {% if unread_suggestions_count %}<span class="inline-badge">{{ unread_suggestions_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint in ['admin.semester_exceptions_page'] else '' }}" href="{{ url_for('admin.semester_exceptions_page') }}"><i data-lucide="graduation-cap"></i> Semester Exceptions</a>
+                        <a class="{{ 'active' if request.endpoint in ['admin.suggestions_page'] else '' }}" href="{{ url_for('admin.suggestions_page') }}"><i data-lucide="messages-square"></i> Suggestions</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.users' else '' }}" href="{{ url_for('admin.users') }}"><i data-lucide="users"></i> User Management</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.audit_log' else '' }}" href="{{ url_for('admin.audit_log') }}"><i data-lucide="file-clock"></i> Audit Log</a>
-                        <a class="{{ 'active' if request.endpoint == 'admin.experience_moderation' else '' }}" href="{{ url_for('admin.experience_moderation') }}"><i data-lucide="newspaper"></i> Experience Moderation {% if pending_experience_moderation_count %}<span class="inline-badge">{{ pending_experience_moderation_count }}</span>{% endif %}</a>
-                        <a class="{{ 'active' if request.endpoint == 'admin.experience_reports_list' else '' }}" href="{{ url_for('admin.experience_reports_list') }}"><i data-lucide="flag"></i> Experience Reports {% if open_experience_reports_count %}<span class="inline-badge">{{ open_experience_reports_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.experience_moderation' else '' }}" href="{{ url_for('admin.experience_moderation') }}"><i data-lucide="newspaper"></i> Experience Moderation</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.experience_reports_list' else '' }}" href="{{ url_for('admin.experience_reports_list') }}"><i data-lucide="flag"></i> Experience Reports</a>
                     {% endif %}
                 </div>
             </div>
@@ -122,13 +122,13 @@
                 <div class="app-nav-label">Account</div>
                 <div class="nav-links">
                     {% if session.get('role') == 'student' %}
-                        <a class="{{ 'active' if request.endpoint == 'student.dashboard' else '' }}" href="{{ url_for('student.dashboard') }}#recent-updates"><i data-lucide="bell"></i> Updates {% if role_notification_badge_count %}<span class="inline-badge">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'student.dashboard' else '' }}" href="{{ url_for('student.dashboard') }}#recent-updates"><i data-lucide="bell"></i> Updates</a>
                         <a class="{{ 'active' if request.endpoint == 'student.profile_settings' else '' }}" href="{{ url_for('student.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile</a>
                     {% elif session.get('role') == 'faculty' %}
-                        <a class="{{ 'active' if request.endpoint == 'faculty.updates_page' else '' }}" href="{{ url_for('faculty.updates_page') }}"><i data-lucide="bell"></i> Updates {% if role_notification_badge_count %}<span class="inline-badge">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'faculty.updates_page' else '' }}" href="{{ url_for('faculty.updates_page') }}"><i data-lucide="bell"></i> Updates</a>
                         <a class="{{ 'active' if request.endpoint == 'faculty.profile_settings' else '' }}" href="{{ url_for('faculty.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile</a>
                     {% else %}
-                        <a class="{{ 'active' if request.endpoint == 'admin.updates_page' else '' }}" href="{{ url_for('admin.updates_page') }}"><i data-lucide="bell"></i> Updates {% if role_notification_badge_count %}<span class="inline-badge">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                        <a class="{{ 'active' if request.endpoint == 'admin.updates_page' else '' }}" href="{{ url_for('admin.updates_page') }}"><i data-lucide="bell"></i> Updates</a>
                         <a class="{{ 'active' if request.endpoint == 'admin.profile_settings' else '' }}" href="{{ url_for('admin.profile_settings', tab='profile') }}"><i data-lucide="user-round"></i> Profile</a>
                     {% endif %}
                     <a href="{{ url_for('auth.logout') }}"><i data-lucide="log-out"></i> Logout</a>
@@ -143,7 +143,7 @@
                     <h2 style="margin:0;">{% block page_title %}Dashboard{% endblock %}</h2>
                 </div>
                 <div class="app-topbar-actions">
-                    <a class="icon-btn bell-btn" href="{{ notification_href }}" aria-label="Open updates"><i data-lucide="bell"></i>{% if role_notification_badge_count %}<span class="inline-badge floating">{{ role_notification_badge_count }}</span>{% endif %}</a>
+                    <a class="icon-btn bell-btn" href="{{ notification_href }}" aria-label="Open updates"><i data-lucide="bell"></i></a>
                     <a class="btn profile-chip-btn" href="{{ profile_href }}">
                         <span class="mini-avatar">{{ (session.get('full_name') or 'A')[:1]|upper }}</span>
                         <span class="mini-name">{{ (session.get('full_name') or 'User').split(' ')[0] }}</span>
